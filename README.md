@@ -9,7 +9,32 @@ LinqConnect Menu Notifier is a Go application that fetches school lunch menus fr
 - Configurable through command-line flags or environment variables
 - Customizable email subject
 
-## Prerequisites
+## Running the notifier
+
+Head to the [Releases](https://github.com/aaronsachs/linqconnect-menu-notifier/releases) page to download a pre-built binary for your platform, or build from source.
+
+### Linux/MacOS
+Depending on your platform, you may need to make the binary executable:
+
+```
+chmod +x linqconnect_menu_notifier
+```
+
+You can then either set up a cron job to run the notifier at a regular interval, or run it manually with the following command:
+
+```
+./linqconnect_menu_notifier -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
+```
+
+### Windows
+
+For Windows, you can set up a scheduled task to run the notifier at a regular interval, or run it manually with the following command:
+
+```
+./linqconnect_menu_notifier.exe -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
+```
+
+## Prerequisites (for building from source)
 
 - Go 1.16 or later
 - Access to a SMTP server for sending emails
