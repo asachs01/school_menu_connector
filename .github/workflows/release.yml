@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.21
+
+      - name: Build binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o linq_connect_menu_notifier-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -o linq_connect_menu_notifier-linux-arm64
+          GOOS=darwin GOARCH=amd64 go build -o linq_connect_menu_notifier-darwin-amd64
+          GOOS=darwin GOARCH=arm64 go build -o linq_connect_menu_notifier-darwin-arm64
+          GOOS=windows GOARCH=amd64 go build -o linq_connect_menu_notifier-windows-amd64.exe
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linq_connect_menu_notifier-linux-amd64
+          asset_name: linq_connect_menu_notifier-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux ARM64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linq_connect_menu_notifier-linux-arm64
+          asset_name: linq_connect_menu_notifier-linux-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linq_connect_menu_notifier-darwin-amd64
+          asset_name: linq_connect_menu_notifier-darwin-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS ARM64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linq_connect_menu_notifier-darwin-arm64
+          asset_name: linq_connect_menu_notifier-darwin-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linq_connect_menu_notifier-windows-amd64.exe
+          asset_name: linq_connect_menu_notifier-windows-amd64.exe
+          asset_content_type: application/octet-stream
