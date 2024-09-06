@@ -112,10 +112,18 @@ export END_DATE=MM-DD-YYYY
 - `start`: Start date for menu range (format: MM-DD-YYYY, default: today)
 - `end`: End date for menu range (format: MM-DD-YYYY, default: same as start date)
 
-Then run the application:
+## Examples
+
+Using a cronjob to set up notifications for the next day is easy enough. For me, that means that I want to get a notification every night Sunday-Thursday so that I can give the info to my kid:
+
+```shell
+0 17 * * 0-4 /home/myuser/.bin/linq_connect_menu_notifier
+```
+
+The equivalent in Windows would be dropping the executable in a location you want to run it from and creating a scheduled task with something like:
 
 ```
-./linq_connect_menu_notifier
+schtasks /create /tn "LINQConnect Menu Notifications" /tr "C:\path\to\your\binary.exe" /sc weekly /d SUN,MON,TUE,WED,THU /st 17:00
 ```
 
 ## Notes
