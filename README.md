@@ -1,6 +1,6 @@
-# LinqConnect Menu Notifier
+# LINQ Connect Menu Notifier
 
-LinqConnect Menu Notifier is a Go application that fetches school lunch menus from the LinqConnect API and sends them via email. It's designed to be flexible, allowing configuration through both command-line flags and environment variables.
+LINQ Connect Menu Notifier is a Go application that fetches school lunch menus from the LINQ Connect API and sends them via email. It's designed to be flexible, allowing configuration through both command-line flags and environment variables.
 
 ## Features
 
@@ -8,6 +8,21 @@ LinqConnect Menu Notifier is a Go application that fetches school lunch menus fr
 - Send menus via email
 - Configurable through command-line flags or environment variables
 - Customizable email subject
+
+## Prerequisites
+
+The biggest thing that you need is the building and district IDs.  To find them:
+
+1. Go to https://linqconnect.com/ and sign in
+2. Click on the hamburger menu in the top left corner
+3. Click on "School Menu"
+4. Click on your school
+5. Open up the browser's developer tools (usually F12)
+6. Click on the "Network" tab
+7. Search for "FamilyMenu"
+8. Click on the request
+9. In the "Query String Parameters" section, find the `districtId` parameter and the `buildingId` parameter
+10. Copy the values and save them in a secure location
 
 ## Running the notifier
 
@@ -17,13 +32,13 @@ Head to the [Releases](https://github.com/aaronsachs/linqconnect-menu-notifier/r
 Depending on your platform, you may need to make the binary executable:
 
 ```
-chmod +x linqconnect_menu_notifier
+chmod +x linq_connect_menu_notifier
 ```
 
 You can then either set up a cron job to run the notifier at a regular interval, or run it manually with the following command:
 
 ```
-./linqconnect_menu_notifier -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
+./linq_connect_menu_notifier -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
 ```
 
 ### Windows
@@ -31,7 +46,7 @@ You can then either set up a cron job to run the notifier at a regular interval,
 For Windows, you can set up a scheduled task to run the notifier at a regular interval, or run it manually with the following command:
 
 ```
-./linqconnect_menu_notifier.exe -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
+./linq_connect_menu_notifier.exe -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
 ```
 
 ## Prerequisites (for building from source)
@@ -49,7 +64,7 @@ For Windows, you can set up a scheduled task to run the notifier at a regular in
 
 2. Build the application:
    ```
-   go build -o linqconnect_menu_notifier
+   go build -o linq_connect_menu_notifier
    ```
 
 ## Usage
@@ -59,7 +74,7 @@ You can run the application using command-line flags or environment variables.
 ### Command-line flags:
 
 ```
-./linqconnect_menu_notifier \
+./linq_connect_menu_notifier \
 -building=YOUR_BUILDING_ID \
 -district=YOUR_DISTRICT_ID \
 -recipient=recipient@example.com \
@@ -100,7 +115,7 @@ export END_DATE=MM-DD-YYYY
 Then run the application:
 
 ```
-./linqconnect_menu_notifier
+./linq_connect_menu_notifier
 ```
 
 ## Notes
