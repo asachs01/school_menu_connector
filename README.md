@@ -1,3 +1,5 @@
+<a href="https://www.buymeacoffee.com/aaronsachs" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" width="120" height="30" ></a>
+
 # LINQ Connect Menu Notifier
 
 LINQ Connect Menu Notifier is a Go application that fetches school lunch menus from the LINQ Connect API and sends them via email. It's designed to be flexible, allowing configuration through both command-line flags and environment variables.
