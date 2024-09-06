@@ -179,12 +179,29 @@ func getLunchMenuString(menu *MenuResponse) string {
 }
 
 func sendEmail(smtpServer, from, password string, to []string, subject, body string) error {
-	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s\r\n", 
-		strings.Join(to, ", "), subject, body))
+	// Use the first recipient as the main "To" address
+	mainRecipient := to[0]
+	bcc := strings.Join(to[1:], ", ")
+
+	header := make(map[string]string)
+	header["From"] = from
+	header["To"] = mainRecipient
+	header["Subject"] = subject
+	header["MIME-Version"] = "1.0"
+	header["Content-Type"] = "text/plain; charset=\"utf-8\""
+	if bcc != "" {
+		header["Bcc"] = bcc
+	}
+
+	message := ""
+	for k, v := range header {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	message += "\r\n" + body
 
 	auth := smtp.PlainAuth("", from, password, strings.Split(smtpServer, ":")[0])
 
-	return smtp.SendMail(smtpServer, auth, from, to, msg)
+	return smtp.SendMail(smtpServer, auth, from, to, []byte(message))
 }
 
 func createICSFile(menu *MenuResponse, weekStart, outputPath string) error {
