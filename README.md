@@ -1,3 +1,4 @@
+![Release](https://github.com/asachs01/linq_connect_notifier/actions/workflows/release.yml/badge.svg)
 <a href="https://www.buymeacoffee.com/aaronsachs" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" width="120" height="30" ></a>
 
 # LINQ Connect Menu Notifier
