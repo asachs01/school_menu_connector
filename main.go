@@ -180,9 +180,9 @@ func run(buildingID, districtID, recipients, sender, password, smtpServer, subje
 
     if icsFlag {
         if icsOutputPath == "" {
-            icsOutputPath = fmt.Sprintf("lunch_menu_%s.ics", start.Format("01-02-2006"))
+            icsOutputPath = fmt.Sprintf("lunch_menu_%s_to_%s.ics", start.Format("01-02-2006"), end.Format("01-02-2006"))
         }
-        if err := createICSFile(buildingID, districtID, start.Format("01-02-2006"), icsOutputPath, debugFlag); err != nil {
+        if err := createICSFile(buildingID, districtID, start.Format("01-02-2006"), end.Format("01-02-2006"), icsOutputPath, debugFlag); err != nil {
             return fmt.Errorf("creating ICS file: %w", err)
         }
         fmt.Printf("ICS file created at: %s\n", icsOutputPath)
@@ -269,24 +269,27 @@ func sendEmail(smtpServer, from, password string, to []string, subject, body str
 	return smtp.SendMail(smtpServer, auth, from, to, []byte(message))
 }
 
-func createICSFile(buildingID, districtID, weekStart, outputPath string, debug bool) error {
-    // Parse the week start date
-    start, err := time.Parse("01-02-2006", weekStart)
+func createICSFile(buildingID, districtID, startDateStr, endDateStr, outputPath string, debug bool) error {
+    // Parse the start and end dates
+    start, err := time.Parse("01-02-2006", startDateStr)
     if err != nil {
-        return fmt.Errorf("invalid week start date: %w", err)
+        return fmt.Errorf("invalid start date: %w", err)
+    }
+    end, err := time.Parse("01-02-2006", endDateStr)
+    if err != nil {
+        return fmt.Errorf("invalid end date: %w", err)
     }
 
     if debug {
-        fmt.Printf("Creating ICS file for week starting: %s\n", start.Format("2006-01-02"))
+        fmt.Printf("Creating ICS file for date range: %s to %s\n", start.Format("2006-01-02"), end.Format("2006-01-02"))
     }
 
     // Create a new calendar
     cal := ics.NewCalendar()
     cal.SetMethod(ics.MethodPublish)
 
-    // Iterate through the menu for 5 days (Monday to Friday)
-    for i := 0; i < 5; i++ {
-        date := start.AddDate(0, 0, i)
+    // Iterate through the date range
+    for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
         dateStr := date.Format("01-02-2006")
 
         if debug {
