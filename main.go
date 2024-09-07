@@ -44,28 +44,34 @@ func main() {
 	password := flag.String("password", os.Getenv("EMAIL_PASSWORD"), "Sender email password")
 	smtpServer := flag.String("smtp", os.Getenv("SMTP_SERVER"), "SMTP server and port")
 	subject := flag.String("subject", os.Getenv("EMAIL_SUBJECT"), "Email subject line")
-	startDate := flag.String("start", os.Getenv("START_DATE"), "Start date (MM-DD-YYYY)")
-	endDate := flag.String("end", os.Getenv("END_DATE"), "End date (MM-DD-YYYY)")
-	createCalendarFile := flag.Bool("create-calendar-file", false, "Create an ICS calendar file")
+	startDate := flag.String("startDate", os.Getenv("START_DATE"), "Start date (MM-DD-YYYY)")
+	endDate := flag.String("endDate", os.Getenv("END_DATE"), "End date (MM-DD-YYYY)")
 	weekStart := flag.String("week-start", "", "Start date of the week (MM-DD-YYYY) for calendar file")
 	icsOutputPath := flag.String("ics-output-path", "", "Output path for the ICS file")
+	emailFlag := flag.Bool("email", false, "Send email")
+	icsFlag := flag.Bool("ics", false, "Generate ICS file")
+	debugFlag := flag.Bool("debug", false, "Enable debug output")
 	flag.Parse()
 
-	if err := run(*buildingID, *districtID, *recipients, *sender, *password, *smtpServer, *subject, *startDate, *endDate, *createCalendarFile, *weekStart, *icsOutputPath); err != nil {
+	if err := run(*buildingID, *districtID, *recipients, *sender, *password, *smtpServer, *subject, *startDate, *endDate, *weekStart, *icsOutputPath, *emailFlag, *icsFlag, *debugFlag); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(buildingID, districtID, recipients, sender, password, smtpServer, subject, startDate, endDate string, createCalendarFile bool, weekStart, icsOutputPath string) error {
-	// Set default SMTP server if not provided
-	if smtpServer == "" {
-		smtpServer = "smtp.gmail.com:587"
+func run(buildingID, districtID, recipients, sender, password, smtpServer, subject, startDate, endDate, weekStart, icsOutputPath string, emailFlag, icsFlag, debugFlag bool) error {
+	if !emailFlag && !icsFlag {
+		return fmt.Errorf("at least one of -email or -ics must be provided")
 	}
 
-	// Set default subject if not provided
-	if subject == "" {
-		subject = "Lunch Menu"
+	if buildingID == "" || districtID == "" {
+		return fmt.Errorf("building ID and district ID are required for all operations")
+	}
+
+	if emailFlag {
+		if recipients == "" || sender == "" || password == "" {
+			return fmt.Errorf("recipient email, sender email, and password are required for email")
+		}
 	}
 
 	// Set default dates if not provided
@@ -75,10 +81,6 @@ func run(buildingID, districtID, recipients, sender, password, smtpServer, subje
 	}
 	if endDate == "" {
 		endDate = startDate
-	}
-
-	if buildingID == "" || districtID == "" || recipients == "" || sender == "" || password == "" {
-		return fmt.Errorf("building ID, district ID, recipient email, sender email, and password are required")
 	}
 
 	url := constructURL(buildingID, districtID, startDate, endDate)
@@ -92,32 +94,40 @@ func run(buildingID, districtID, recipients, sender, password, smtpServer, subje
 		return fmt.Errorf("no lunch menu found for the specified date range")
 	}
 
-	// Update subject with date or date range
-	if startDate == endDate {
-		subject = fmt.Sprintf("%s (%s)", subject, startDate)
-	} else {
-		subject = fmt.Sprintf("%s (%s to %s)", subject, startDate, endDate)
-	}
-
-	recipientList := strings.Split(recipients, ",")
-	for i, email := range recipientList {
-		recipientList[i] = strings.TrimSpace(email)
-	}
-
-	if err := sendEmail(smtpServer, sender, password, recipientList, subject, lunchMenu); err != nil {
-		return fmt.Errorf("sending email: %w", err)
-	}
-
-	fmt.Println("Lunch menu sent successfully!")
-
-	if createCalendarFile {
-		if weekStart == "" {
-			return fmt.Errorf("week-start is required when create-calendar-file is set")
+	if emailFlag {
+		if smtpServer == "" {
+			smtpServer = "smtp.gmail.com:587"
 		}
+		if subject == "" {
+			subject = "Lunch Menu"
+		}
+		// Update subject with date or date range
+		if startDate == endDate {
+			subject = fmt.Sprintf("%s (%s)", subject, startDate)
+		} else {
+			subject = fmt.Sprintf("%s (%s to %s)", subject, startDate, endDate)
+		}
+
+		recipientList := strings.Split(recipients, ",")
+		for i, email := range recipientList {
+			recipientList[i] = strings.TrimSpace(email)
+		}
+
+		if err := sendEmail(smtpServer, sender, password, recipientList, subject, lunchMenu); err != nil {
+			return fmt.Errorf("sending email: %w", err)
+		}
+
+		fmt.Println("Lunch menu sent successfully!")
+	}
+
+	if icsFlag {
 		if icsOutputPath == "" {
 			icsOutputPath = "lunch_menu.ics"
 		}
-		if err := createICSFile(menu, weekStart, icsOutputPath); err != nil {
+		if weekStart == "" {
+			weekStart = startDate
+		}
+		if err := createICSFile(menu, weekStart, icsOutputPath, debugFlag); err != nil {
 			return fmt.Errorf("creating ICS file: %w", err)
 		}
 		fmt.Printf("ICS file created at: %s\n", icsOutputPath)
@@ -204,7 +214,7 @@ func sendEmail(smtpServer, from, password string, to []string, subject, body str
 	return smtp.SendMail(smtpServer, auth, from, to, []byte(message))
 }
 
-func createICSFile(menu *MenuResponse, weekStart, outputPath string) error {
+func createICSFile(menu *MenuResponse, weekStart, outputPath string, debug bool) error {
 	// Parse the week start date
 	start, err := time.Parse("01-02-2006", weekStart)
 	if err != nil {
@@ -218,7 +228,7 @@ func createICSFile(menu *MenuResponse, weekStart, outputPath string) error {
 	// Iterate through the menu for 5 days (Monday to Friday)
 	for i := 0; i < 5; i++ {
 		date := start.AddDate(0, 0, i)
-		lunchMenu := getLunchMenuForDate(menu, date.Format("1/2/2006"))
+		lunchMenu := getLunchMenuForDate(menu, date.Format("1/2/2006"), debug)
 
 		if lunchMenu != "" {
 			event := cal.AddEvent(fmt.Sprintf("lunch-%s", date.Format("2006-01-02")))
@@ -229,6 +239,8 @@ func createICSFile(menu *MenuResponse, weekStart, outputPath string) error {
 			event.SetEndAt(date.Add(13 * time.Hour))   // Assume 1-hour lunch
 			event.SetSummary(fmt.Sprintf("Lunch Menu - %s", date.Format("01/02/2006")))
 			event.SetDescription(lunchMenu)
+		} else if debug {
+			fmt.Printf("No lunch menu found for date: %s\n", date.Format("01/02/2006"))
 		}
 	}
 
@@ -243,13 +255,20 @@ func createICSFile(menu *MenuResponse, weekStart, outputPath string) error {
 	return cal.SerializeTo(file)
 }
 
-func getLunchMenuForDate(menu *MenuResponse, date string) string {
+func getLunchMenuForDate(menu *MenuResponse, date string, debug bool) string {
 	var lunchMenu strings.Builder
+
+	if debug {
+		fmt.Printf("Searching for lunch menu on date: %s\n", date)
+	}
 
 	for _, session := range menu.FamilyMenuSessions {
 		if session.ServingSession == "Lunch" {
 			for _, plan := range session.MenuPlans {
 				for _, day := range plan.Days {
+					if debug {
+						fmt.Printf("Checking day: %s\n", day.Date)
+					}
 					if day.Date == date {
 						fmt.Fprintf(&lunchMenu, "Lunch Menu for %s:\n\n", day.Date)
 						for _, meal := range day.MenuMeals {
@@ -267,6 +286,9 @@ func getLunchMenuForDate(menu *MenuResponse, date string) string {
 				}
 			}
 		}
+	}
+	if debug {
+		fmt.Printf("No lunch menu found for date: %s\n", date)
 	}
 	return ""
 }
