@@ -79,86 +79,116 @@ func main() {
 }
 
 func run(buildingID, districtID, recipients, sender, password, smtpServer, subject, startDate, endDate, weekStart, icsOutputPath string, emailFlag, icsFlag, debugFlag bool) error {
-	if !emailFlag && !icsFlag {
-		return fmt.Errorf("at least one of -email or -ics must be provided")
-	}
+    if debugFlag {
+        fmt.Println("Debug mode enabled")
+        fmt.Printf("Building ID: %s\n", buildingID)
+        fmt.Printf("District ID: %s\n", districtID)
+        fmt.Printf("Start Date: %s\n", startDate)
+        fmt.Printf("End Date: %s\n", endDate)
+        fmt.Printf("Week Start: %s\n", weekStart)
+    }
 
-	if buildingID == "" || districtID == "" {
-		return fmt.Errorf("building ID and district ID are required for all operations")
-	}
+    if !emailFlag && !icsFlag {
+        return fmt.Errorf("at least one of -email or -ics must be provided")
+    }
 
-	if emailFlag {
-		if recipients == "" || sender == "" || password == "" {
-			return fmt.Errorf("recipient email, sender email, and password are required for email")
-		}
-	}
+    if buildingID == "" || districtID == "" {
+        return fmt.Errorf("building ID and district ID are required for all operations")
+    }
 
-	// Set default dates if not provided
-	today := time.Now().Format("01-02-2006")
-	if startDate == "" {
-		startDate = today
-	}
-	if endDate == "" {
-		endDate = startDate
-	}
+    // Determine the start and end dates
+    var start, end time.Time
+    var err error
 
-	url := constructURL(buildingID, districtID, startDate, endDate)
-	menu, err := getMenu(url)
-	if err != nil {
-		return fmt.Errorf("fetching menu: %w", err)
-	}
+    if weekStart != "" {
+        start, err = time.Parse("01-02-2006", weekStart)
+        if err != nil {
+            return fmt.Errorf("invalid week start date: %w", err)
+        }
+        end = start.AddDate(0, 0, 4) // 5-day range for week-start
+    } else if startDate != "" {
+        start, err = time.Parse("01-02-2006", startDate)
+        if err != nil {
+            return fmt.Errorf("invalid start date: %w", err)
+        }
+        if endDate != "" {
+            end, err = time.Parse("01-02-2006", endDate)
+            if err != nil {
+                return fmt.Errorf("invalid end date: %w", err)
+            }
+        } else {
+            end = start // Single day if only startDate is provided
+        }
+    } else {
+        start = time.Now()
+        end = start // Single day for current date
+    }
 
-	lunchMenu := getLunchMenuString(menu)
-	if lunchMenu == "" {
-		return fmt.Errorf("no lunch menu found for the specified date range")
-	}
+    if debugFlag {
+        fmt.Printf("Fetching menu for date range: %s to %s\n", start.Format("01-02-2006"), end.Format("01-02-2006"))
+    }
 
-	if emailFlag {
-		if smtpServer == "" {
-			smtpServer = "smtp.gmail.com:587"
-		}
-		if subject == "" {
-			subject = "Lunch Menu"
-		}
-		// Update subject with date or date range
-		if startDate == endDate {
-			subject = fmt.Sprintf("%s (%s)", subject, startDate)
-		} else {
-			subject = fmt.Sprintf("%s (%s to %s)", subject, startDate, endDate)
-		}
+    url := constructURL(buildingID, districtID, start.Format("01-02-2006"), end.Format("01-02-2006"))
+    if debugFlag {
+        fmt.Printf("API URL: %s\n", url)
+    }
 
-		recipientList := strings.Split(recipients, ",")
-		for i, email := range recipientList {
-			recipientList[i] = strings.TrimSpace(email)
-		}
+    menu, err := getMenu(url)
+    if err != nil {
+        return fmt.Errorf("fetching menu: %w", err)
+    }
 
-		if err := sendEmail(smtpServer, sender, password, recipientList, subject, lunchMenu); err != nil {
-			return fmt.Errorf("sending email: %w", err)
-		}
+    lunchMenu := getLunchMenuString(menu)
+    if lunchMenu == "" {
+        return fmt.Errorf("no lunch menu found for the specified date range")
+    }
 
-		fmt.Println("Lunch menu sent successfully!")
-	}
+    if debugFlag {
+        fmt.Println("Lunch menu found:")
+        fmt.Println(lunchMenu)
+    }
 
-	if icsFlag {
-		if icsOutputPath == "" {
-			// Parse the weekStart date
-			startDate, err := time.Parse("01-02-2006", weekStart)
-			if err != nil {
-				return fmt.Errorf("invalid week start date: %w", err)
-			}
-			// Create the filename with the date
-			icsOutputPath = fmt.Sprintf("lunch_menu_%s.ics", startDate.Format("01-02-2006"))
-		}
-		if weekStart == "" {
-			weekStart = startDate
-		}
-		if err := createICSFile(buildingID, districtID, weekStart, icsOutputPath, debugFlag); err != nil {
-			return fmt.Errorf("creating ICS file: %w", err)
-		}
-		fmt.Printf("ICS file created at: %s\n", icsOutputPath)
-	}
+    if emailFlag {
+        if recipients == "" || sender == "" || password == "" {
+            return fmt.Errorf("recipient email, sender email, and password are required for email")
+        }
 
-	return nil
+        if smtpServer == "" {
+            smtpServer = "smtp.gmail.com:587"
+        }
+        if subject == "" {
+            subject = "Lunch Menu"
+        }
+        // Update subject with date range
+        if start == end {
+            subject = fmt.Sprintf("%s (%s)", subject, start.Format("01/02/2006"))
+        } else {
+            subject = fmt.Sprintf("%s (%s to %s)", subject, start.Format("01/02/2006"), end.Format("01/02/2006"))
+        }
+
+        recipientList := strings.Split(recipients, ",")
+        for i, email := range recipientList {
+            recipientList[i] = strings.TrimSpace(email)
+        }
+
+        if err := sendEmail(smtpServer, sender, password, recipientList, subject, lunchMenu); err != nil {
+            return fmt.Errorf("sending email: %w", err)
+        }
+
+        fmt.Println("Lunch menu sent successfully!")
+    }
+
+    if icsFlag {
+        if icsOutputPath == "" {
+            icsOutputPath = fmt.Sprintf("lunch_menu_%s.ics", start.Format("01-02-2006"))
+        }
+        if err := createICSFile(buildingID, districtID, start.Format("01-02-2006"), icsOutputPath, debugFlag); err != nil {
+            return fmt.Errorf("creating ICS file: %w", err)
+        }
+        fmt.Printf("ICS file created at: %s\n", icsOutputPath)
+    }
+
+    return nil
 }
 
 func constructURL(buildingID, districtID, startDate, endDate string) string {
@@ -167,23 +197,23 @@ func constructURL(buildingID, districtID, startDate, endDate string) string {
 }
 
 func getMenu(url string) (*MenuResponse, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+    resp, err := http.Get(url)
+    if err != nil {
+        return nil, fmt.Errorf("HTTP GET request failed: %w", err)
+    }
+    defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("reading response body: %w", err)
+    }
 
-	var menu MenuResponse
-	if err := json.Unmarshal(body, &menu); err != nil {
-		return nil, err
-	}
+    var menu MenuResponse
+    if err := json.Unmarshal(body, &menu); err != nil {
+        return nil, fmt.Errorf("unmarshaling JSON: %w\nResponse body: %s", err, string(body))
+    }
 
-	return &menu, nil
+    return &menu, nil
 }
 
 func getLunchMenuString(menu *MenuResponse) string {
@@ -240,59 +270,75 @@ func sendEmail(smtpServer, from, password string, to []string, subject, body str
 }
 
 func createICSFile(buildingID, districtID, weekStart, outputPath string, debug bool) error {
-	// Parse the week start date
-	start, err := time.Parse("01-02-2006", weekStart)
-	if err != nil {
-		return fmt.Errorf("invalid week start date: %w", err)
-	}
+    // Parse the week start date
+    start, err := time.Parse("01-02-2006", weekStart)
+    if err != nil {
+        return fmt.Errorf("invalid week start date: %w", err)
+    }
 
-	// Create a new calendar
-	cal := ics.NewCalendar()
-	cal.SetMethod(ics.MethodPublish)
+    if debug {
+        fmt.Printf("Creating ICS file for week starting: %s\n", start.Format("2006-01-02"))
+    }
 
-	// Iterate through the menu for 5 days (Monday to Friday)
-	for i := 0; i < 5; i++ {
-		date := start.AddDate(0, 0, i)
-		dateStr := date.Format("01-02-2006")
+    // Create a new calendar
+    cal := ics.NewCalendar()
+    cal.SetMethod(ics.MethodPublish)
 
-		// Fetch menu for this specific date
-		url := constructURL(buildingID, districtID, dateStr, dateStr)
-		menu, err := getMenu(url)
-		if err != nil {
-			if debug {
-				fmt.Printf("Error fetching menu for date %s: %v\n", dateStr, err)
-			}
-			continue
-		}
+    // Iterate through the menu for 5 days (Monday to Friday)
+    for i := 0; i < 5; i++ {
+        date := start.AddDate(0, 0, i)
+        dateStr := date.Format("01-02-2006")
 
-		lunchMenu := getLunchMenuForDate(menu, date.Format("1/2/2006"), debug)
+        if debug {
+            fmt.Printf("Fetching menu for date: %s\n", dateStr)
+        }
 
-		if lunchMenu != "" {
-			event := cal.AddEvent(fmt.Sprintf("lunch-%s", date.Format("2006-01-02")))
-			event.SetCreatedTime(time.Now())
-			event.SetDtStampTime(time.Now())
-			event.SetModifiedAt(time.Now())
+        // Fetch menu for this specific date
+        url := constructURL(buildingID, districtID, dateStr, dateStr)
+        if debug {
+            fmt.Printf("API URL: %s\n", url)
+        }
 
-			// Set as an all-day event
-			event.SetAllDayStartAt(date)
-			event.SetAllDayEndAt(date.AddDate(0, 0, 1)) // End date is exclusive, so we add one day
+        menu, err := getMenu(url)
+        if err != nil {
+            if debug {
+                fmt.Printf("Error fetching menu for date %s: %v\n", dateStr, err)
+            }
+            continue
+        }
 
-			event.SetSummary(fmt.Sprintf("Lunch Menu - %s", date.Format("01/02/2006")))
-			event.SetDescription(lunchMenu)
-		} else if debug {
-			fmt.Printf("No lunch menu found for date: %s\n", date.Format("01/02/2006"))
-		}
-	}
+        lunchMenu := getLunchMenuForDate(menu, date.Format("1/2/2006"), debug)
 
-	// Create the output file
-	file, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
+        if lunchMenu != "" {
+            event := cal.AddEvent(fmt.Sprintf("lunch-%s", date.Format("2006-01-02")))
+            event.SetCreatedTime(time.Now())
+            event.SetDtStampTime(time.Now())
+            event.SetModifiedAt(time.Now())
 
-	// Write the ICS file
-	return cal.SerializeTo(file)
+            // Set as an all-day event
+            event.SetAllDayStartAt(date)
+            event.SetAllDayEndAt(date.AddDate(0, 0, 1)) // End date is exclusive, so we add one day
+
+            event.SetSummary(fmt.Sprintf("Lunch Menu - %s", date.Format("01/02/2006")))
+            event.SetDescription(lunchMenu)
+
+            if debug {
+                fmt.Printf("Added event for date: %s\n", date.Format("2006-01-02"))
+            }
+        } else if debug {
+            fmt.Printf("No lunch menu found for date: %s\n", date.Format("01/02/2006"))
+        }
+    }
+
+    // Create the output file
+    file, err := os.Create(outputPath)
+    if err != nil {
+        return fmt.Errorf("failed to create file: %w", err)
+    }
+    defer file.Close()
+
+    // Write the ICS file
+    return cal.SerializeTo(file)
 }
 
 func getLunchMenuForDate(menu *MenuResponse, date string, debug bool) string {
