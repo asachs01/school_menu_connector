@@ -84,8 +84,13 @@ You can run the application using command-line flags or environment variables.
 -password=your_email_password \
 -smtp=smtp.example.com:587 \
 -subject="School Lunch Menu" \
--start=MM-DD-YYYY \
--end=MM-DD-YYYY
+-startDate=MM-DD-YYYY \
+-endDate=MM-DD-YYYY \
+-email \
+-ics \
+-week-start=MM-DD-YYYY \
+-ics-output-path=path/to/output.ics \
+-debug
 ```
 
 ### Environment variables:
@@ -100,21 +105,30 @@ export SMTP_SERVER=smtp.example.com:587
 export EMAIL_SUBJECT="School Lunch Menu"
 export START_DATE=MM-DD-YYYY
 export END_DATE=MM-DD-YYYY
+export WEEK_START=MM-DD-YYYY
+export ICS_OUTPUT_PATH=/path/to/output.ics
+export DEBUG=true
 ```
 
 ## Configuration Options
 
 - `building`: Building ID (required)
 - `district`: District ID (required)
-- `recipient`: Recipient email address (required)
-- `sender`: Sender email address (required)
-- `password`: Sender email password (required)
+- `recipient`: Recipient email address (required for email)
+- `sender`: Sender email address (required for email)
+- `password`: Sender email password (required for email)
 - `smtp`: SMTP server and port (default: smtp.gmail.com:587)
 - `subject`: Email subject line (default: "Lunch Menu")
-- `start`: Start date for menu range (format: MM-DD-YYYY, default: today)
-- `end`: End date for menu range (format: MM-DD-YYYY, default: same as start date)
+- `startDate`: Start date for menu range (format: MM-DD-YYYY, default: today)
+- `endDate`: End date for menu range (format: MM-DD-YYYY, default: same as start date)
+- `email`: Flag to enable email sending
+- `ics`: Flag to enable ICS file generation
+- `week-start`: Start date of the week for ICS file (format: MM-DD-YYYY, default: startDate)
+- `ics-output-path`: Custom path for the ICS file output
+- `debug`: Enable debug output for troubleshooting
 
 ## Examples
+### Sending an email
 
 Using a cronjob to set up notifications for the next day is easy enough. For me, that means that I want to get a notification every night Sunday-Thursday so that I can give the info to my kid:
 
@@ -126,6 +140,20 @@ The equivalent in Windows would be dropping the executable in a location you wan
 
 ```
 schtasks /create /tn "LINQConnect Menu Notifications" /tr "C:\path\to\your\binary.exe" /sc weekly /d SUN,MON,TUE,WED,THU /st 17:00
+```
+
+### Generating an ICS file
+
+If you want to use the ICS file to display the lunch menu in a web browser or other calendar application, you can use the following command:
+
+```shell
+./linq_connect_menu_notifier -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -ics -week-start=MM-DD-YYYY
+```
+
+Optionally, you can specify an output path for the ICS file:
+
+```shell
+./linq_connect_menu_notifier -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -ics -week-start=MM-DD-YYYY -ics-output-path=path/to/output.ics
 ```
 
 ## Notes
