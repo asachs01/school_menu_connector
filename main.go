@@ -122,12 +122,18 @@ func run(buildingID, districtID, recipients, sender, password, smtpServer, subje
 
 	if icsFlag {
 		if icsOutputPath == "" {
-			icsOutputPath = "lunch_menu.ics"
+			// Parse the weekStart date
+			startDate, err := time.Parse("01-02-2006", weekStart)
+			if err != nil {
+				return fmt.Errorf("invalid week start date: %w", err)
+			}
+			// Create the filename with the date
+			icsOutputPath = fmt.Sprintf("lunch_menu_%s.ics", startDate.Format("01-02-2006"))
 		}
 		if weekStart == "" {
 			weekStart = startDate
 		}
-		if err := createICSFile(menu, weekStart, icsOutputPath, debugFlag); err != nil {
+		if err := createICSFile(buildingID, districtID, weekStart, icsOutputPath, debugFlag); err != nil {
 			return fmt.Errorf("creating ICS file: %w", err)
 		}
 		fmt.Printf("ICS file created at: %s\n", icsOutputPath)
@@ -214,81 +220,99 @@ func sendEmail(smtpServer, from, password string, to []string, subject, body str
 	return smtp.SendMail(smtpServer, auth, from, to, []byte(message))
 }
 
-func createICSFile(menu *MenuResponse, weekStart, outputPath string, debug bool) error {
-	// Parse the week start date
-	start, err := time.Parse("01-02-2006", weekStart)
-	if err != nil {
-		return fmt.Errorf("invalid week start date: %w", err)
-	}
+func createICSFile(buildingID, districtID, weekStart, outputPath string, debug bool) error {
+    // Parse the week start date
+    start, err := time.Parse("01-02-2006", weekStart)
+    if err != nil {
+        return fmt.Errorf("invalid week start date: %w", err)
+    }
 
-	// Create a new calendar
-	cal := ics.NewCalendar()
-	cal.SetMethod(ics.MethodPublish)
+    // Create a new calendar
+    cal := ics.NewCalendar()
+    cal.SetMethod(ics.MethodPublish)
 
-	// Iterate through the menu for 5 days (Monday to Friday)
-	for i := 0; i < 5; i++ {
-		date := start.AddDate(0, 0, i)
-		lunchMenu := getLunchMenuForDate(menu, date.Format("1/2/2006"), debug)
+    // Iterate through the menu for 5 days (Monday to Friday)
+    for i := 0; i < 5; i++ {
+        date := start.AddDate(0, 0, i)
+        dateStr := date.Format("01-02-2006")
+        
+        // Fetch menu for this specific date
+        url := constructURL(buildingID, districtID, dateStr, dateStr)
+        menu, err := getMenu(url)
+        if err != nil {
+            if debug {
+                fmt.Printf("Error fetching menu for date %s: %v\n", dateStr, err)
+            }
+            continue
+        }
 
-		if lunchMenu != "" {
-			event := cal.AddEvent(fmt.Sprintf("lunch-%s", date.Format("2006-01-02")))
-			event.SetCreatedTime(time.Now())
-			event.SetDtStampTime(time.Now())
-			event.SetModifiedAt(time.Now())
-			event.SetStartAt(date.Add(12 * time.Hour)) // Set lunch time to noon
-			event.SetEndAt(date.Add(13 * time.Hour))   // Assume 1-hour lunch
-			event.SetSummary(fmt.Sprintf("Lunch Menu - %s", date.Format("01/02/2006")))
-			event.SetDescription(lunchMenu)
-		} else if debug {
-			fmt.Printf("No lunch menu found for date: %s\n", date.Format("01/02/2006"))
-		}
-	}
+        lunchMenu := getLunchMenuForDate(menu, date.Format("1/2/2006"), debug)
 
-	// Create the output file
-	file, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
+        if lunchMenu != "" {
+            event := cal.AddEvent(fmt.Sprintf("lunch-%s", date.Format("2006-01-02")))
+            event.SetCreatedTime(time.Now())
+            event.SetDtStampTime(time.Now())
+            event.SetModifiedAt(time.Now())
+            
+            // Set as an all-day event
+            event.SetAllDayStartAt(date)
+            event.SetAllDayEndAt(date.AddDate(0, 0, 1)) // End date is exclusive, so we add one day
 
-	// Write the ICS file
-	return cal.SerializeTo(file)
+            event.SetSummary(fmt.Sprintf("Lunch Menu - %s", date.Format("01/02/2006")))
+            event.SetDescription(lunchMenu)
+        } else if debug {
+            fmt.Printf("No lunch menu found for date: %s\n", date.Format("01/02/2006"))
+        }
+    }
+
+    // Create the output file
+    file, err := os.Create(outputPath)
+    if err != nil {
+        return fmt.Errorf("failed to create file: %w", err)
+    }
+    defer file.Close()
+
+    // Write the ICS file
+    return cal.SerializeTo(file)
 }
 
 func getLunchMenuForDate(menu *MenuResponse, date string, debug bool) string {
-	var lunchMenu strings.Builder
+    var lunchMenu strings.Builder
 
-	if debug {
-		fmt.Printf("Searching for lunch menu on date: %s\n", date)
-	}
+    if debug {
+        fmt.Printf("Searching for lunch menu on date: %s\n", date)
+    }
 
-	for _, session := range menu.FamilyMenuSessions {
-		if session.ServingSession == "Lunch" {
-			for _, plan := range session.MenuPlans {
-				for _, day := range plan.Days {
-					if debug {
-						fmt.Printf("Checking day: %s\n", day.Date)
-					}
-					if day.Date == date {
-						fmt.Fprintf(&lunchMenu, "Lunch Menu for %s:\n\n", day.Date)
-						for _, meal := range day.MenuMeals {
-							fmt.Fprintf(&lunchMenu, "%s:\n", meal.MenuMealName)
-							for _, category := range meal.RecipeCategories {
-								fmt.Fprintf(&lunchMenu, "  %s:\n", category.CategoryName)
-								for _, recipe := range category.Recipes {
-									fmt.Fprintf(&lunchMenu, "    - %s\n", recipe.RecipeName)
-								}
-							}
-							lunchMenu.WriteString("\n")
-						}
-						return lunchMenu.String()
-					}
-				}
-			}
-		}
-	}
-	if debug {
-		fmt.Printf("No lunch menu found for date: %s\n", date)
-	}
-	return ""
+    for _, session := range menu.FamilyMenuSessions {
+        if session.ServingSession == "Lunch" {
+            for _, plan := range session.MenuPlans {
+                for _, day := range plan.Days {
+                    if debug {
+                        fmt.Printf("Checking day: %s\n", day.Date)
+                    }
+
+                    if day.Date == date {
+                        // Build lunch menu
+                        fmt.Fprintf(&lunchMenu, "Lunch Menu for %s:\n\n", day.Date)
+                        for _, meal := range day.MenuMeals {
+                            fmt.Fprintf(&lunchMenu, "%s:\n", meal.MenuMealName)
+                            for _, category := range meal.RecipeCategories {
+                                fmt.Fprintf(&lunchMenu, "  %s:\n", category.CategoryName)
+                                for _, recipe := range category.Recipes {
+                                    fmt.Fprintf(&lunchMenu, "    - %s\n", recipe.RecipeName)
+                                }
+                            }
+                            lunchMenu.WriteString("\n")
+                        }
+                        return lunchMenu.String()
+                    }
+                }
+            }
+        }
+    }
+
+    if debug {
+        fmt.Printf("No lunch menu found for date: %s\n", date)
+    }
+    return ""
 }
