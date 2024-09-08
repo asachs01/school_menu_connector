@@ -26,11 +26,11 @@ jobs:
 
       - name: Build binaries
         run: |
-          GOOS=linux GOARCH=amd64 go build -o linq_connect_menu_notifier-linux-amd64
-          GOOS=linux GOARCH=arm64 go build -o linq_connect_menu_notifier-linux-arm64
-          GOOS=darwin GOARCH=amd64 go build -o linq_connect_menu_notifier-darwin-amd64
-          GOOS=darwin GOARCH=arm64 go build -o linq_connect_menu_notifier-darwin-arm64
-          GOOS=windows GOARCH=amd64 go build -o linq_connect_menu_notifier-windows-amd64.exe
+          GOOS=linux GOARCH=amd64 go build -o school_menu_connector-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -o school_menu_connector-linux-arm64
+          GOOS=darwin GOARCH=amd64 go build -o school_menu_connector-darwin-amd64
+          GOOS=darwin GOARCH=arm64 go build -o school_menu_connector-darwin-arm64
+          GOOS=windows GOARCH=amd64 go build -o school_menu_connector-windows-amd64.exe
 
       - name: Create Release
         id: create_release
@@ -49,8 +49,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linq_connect_menu_notifier-linux-amd64
-          asset_name: linq_connect_menu_notifier-linux-amd64
+          asset_path: ./school_menu_connector-linux-amd64
+          asset_name: school_menu_connector-linux-amd64
           asset_content_type: application/octet-stream
 
       - name: Upload Linux ARM64 Binary
@@ -59,8 +59,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linq_connect_menu_notifier-linux-arm64
-          asset_name: linq_connect_menu_notifier-linux-arm64
+          asset_path: ./school_menu_connector-linux-arm64
+          asset_name: school_menu_connector-linux-arm64
           asset_content_type: application/octet-stream
 
       - name: Upload macOS AMD64 Binary
@@ -69,8 +69,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linq_connect_menu_notifier-darwin-amd64
-          asset_name: linq_connect_menu_notifier-darwin-amd64
+          asset_path: ./school_menu_connector-darwin-amd64
+          asset_name: school_menu_connector-darwin-amd64
           asset_content_type: application/octet-stream
 
       - name: Upload macOS ARM64 Binary
@@ -79,8 +79,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linq_connect_menu_notifier-darwin-arm64
-          asset_name: linq_connect_menu_notifier-darwin-arm64
+          asset_path: ./school_menu_connector-darwin-arm64
+          asset_name: school_menu_connector-darwin-arm64
           asset_content_type: application/octet-stream
 
       - name: Upload Windows AMD64 Binary
@@ -89,6 +89,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linq_connect_menu_notifier-windows-amd64.exe
-          asset_name: linq_connect_menu_notifier-windows-amd64.exe
+          asset_path: ./school_menu_connector-windows-amd64.exe
+          asset_name: school_menu_connector-windows-amd64.exe
           asset_content_type: application/octet-stream
