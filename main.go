@@ -1,5 +1,5 @@
 /*
-LINQ Connect Menu Notifier
+School Menu Connector
 Copyright (C) 2024 Aaron Sachs
 
 This program is free software: you can redistribute it and/or modify

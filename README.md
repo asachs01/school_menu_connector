@@ -1,9 +1,9 @@
-![Release](https://github.com/asachs01/linq_connect_notifier/actions/workflows/release.yml/badge.svg)
-<a href="https://www.buymeacoffee.com/aaronsachs" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" width="120" height="30" ></a>
+![Release](https://github.com/asachs01/school_menu_connector/actions/workflows/release.yml/badge.svg)
+<a href="https://www.buymeacoffee.com/asachs01" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" width="120" height="30" ></a>
 
-# LINQ Connect Menu Notifier
+# School Menu Connector
 
-LINQ Connect Menu Notifier is a Go application that fetches school lunch menus from the LINQ Connect API and sends them via email. It's designed to be flexible, allowing configuration through both command-line flags and environment variables.
+School Menu Connector is a Go application that fetches school lunch menus from the LINQ Connect API and sends them via email. It's designed to be flexible, allowing configuration through both command-line flags and environment variables.
 
 ## Features
 
@@ -29,19 +29,19 @@ The biggest thing that you need is the building and district IDs.  To find them:
 
 ## Running the notifier
 
-Head to the [Releases](https://github.com/aaronsachs/linqconnect-menu-notifier/releases) page to download a pre-built binary for your platform, or build from source.
+Head to the [Releases](https://github.com/asachs01/school_menu_connector/releases) page to download a pre-built binary for your platform, or build from source.
 
 ### Linux/MacOS
 Depending on your platform, you may need to make the binary executable:
 
 ```
-chmod +x linq_connect_menu_notifier
+chmod +x school_menu_connector
 ```
 
 You can then either set up a cron job to run the notifier at a regular interval, or run it manually with the following command:
 
 ```
-./linq_connect_menu_notifier -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
+./school_menu_connector -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
 ```
 
 ### Windows
@@ -49,7 +49,7 @@ You can then either set up a cron job to run the notifier at a regular interval,
 For Windows, you can set up a scheduled task to run the notifier at a regular interval, or run it manually with the following command:
 
 ```
-./linq_connect_menu_notifier.exe -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
+./school_menu_connector.exe -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -recipient=recipient@example.com -sender=your_email@example.com -password=your_email_password -smtp=smtp.example.com:587 -subject="School Lunch Menu" -start=MM-DD-YYYY -end=MM-DD-YYYY
 ```
 
 ## Prerequisites (for building from source)
@@ -61,13 +61,13 @@ For Windows, you can set up a scheduled task to run the notifier at a regular in
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/linqconnect-menu-notifier.git
-   cd linqconnect-menu-notifier
+   git clone https://github.com/yourusername/school_menu_connector.git
+   cd school_menu_connector
    ```
 
 2. Build the application:
    ```
-   go build -o linq_connect_menu_notifier
+   go build -o school_menu_connector
    ```
 
 ## Usage
@@ -77,7 +77,7 @@ You can run the application using command-line flags or environment variables.
 ### Command-line flags:
 
 ```
-./linq_connect_menu_notifier \
+./school_menu_connector \
 -building=YOUR_BUILDING_ID \
 -district=YOUR_DISTRICT_ID \
 -recipient=recipient@example.com \
@@ -134,13 +134,13 @@ export DEBUG=true
 Using a cronjob to set up notifications for the next day is easy enough. For me, that means that I want to get a notification every night Sunday-Thursday so that I can give the info to my kid:
 
 ```shell
-0 17 * * 0-4 /home/myuser/.bin/linq_connect_menu_notifier
+0 17 * * 0-4 /home/myuser/.bin/school_menu_connector
 ```
 
 The equivalent in Windows would be dropping the executable in a location you want to run it from and creating a scheduled task with something like:
 
 ```
-schtasks /create /tn "LINQConnect Menu Notifications" /tr "C:\path\to\your\binary.exe" /sc weekly /d SUN,MON,TUE,WED,THU /st 17:00
+schtasks /create /tn "School Menu Connector Notifications" /tr "C:\path\to\your\binary.exe" /sc weekly /d SUN,MON,TUE,WED,THU /st 17:00
 ```
 
 ### Generating an ICS file
@@ -148,13 +148,13 @@ schtasks /create /tn "LINQConnect Menu Notifications" /tr "C:\path\to\your\binar
 If you want to use the ICS file to display the lunch menu in a web browser or other calendar application, you can use the following command:
 
 ```shell
-./linq_connect_menu_notifier -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -ics -week-start=MM-DD-YYYY
+./school_menu_connector -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -ics -week-start=MM-DD-YYYY
 ```
 
 Optionally, you can specify an output path for the ICS file:
 
 ```shell
-./linq_connect_menu_notifier -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -ics -week-start=MM-DD-YYYY -ics-output-path=path/to/output.ics
+./school_menu_connector -building=YOUR_BUILDING_ID -district=YOUR_DISTRICT_ID -ics -week-start=MM-DD-YYYY -ics-output-path=path/to/output.ics
 ```
 
 ## Notes

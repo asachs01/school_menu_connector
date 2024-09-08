@@ -1,4 +1,4 @@
-module github.com/asachs01/linq_connect_menu_notifier
+module github.com/asachs01/school_menu_connector
 
 go 1.21.5
 
