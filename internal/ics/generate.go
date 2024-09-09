@@ -9,14 +9,14 @@ import (
 	"github.com/asachs01/school_menu_connector/internal/menu"
 )
 
-func GenerateICSFile(buildingID, districtID, startDateStr, endDateStr, outputPath string, debug bool) error {
-	start, err := time.Parse("01-02-2006", startDateStr)
+func GenerateICSFile(buildingID, districtID, startDate, endDate string, outputPath string, debug bool) ([]byte, error) {
+	start, err := time.Parse("01-02-2006", startDate)
 	if err != nil {
-		return fmt.Errorf("invalid start date: %w", err)
+		return nil, fmt.Errorf("invalid start date: %w", err)
 	}
-	end, err := time.Parse("01-02-2006", endDateStr)
+	end, err := time.Parse("01-02-2006", endDate)
 	if err != nil {
-		return fmt.Errorf("invalid end date: %w", err)
+		return nil, fmt.Errorf("invalid end date: %w", err)
 	}
 
 	if debug {
@@ -61,11 +61,16 @@ func GenerateICSFile(buildingID, districtID, startDateStr, endDateStr, outputPat
 		}
 	}
 
-	file, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
+	icsContent := cal.Serialize()
+	icsBytes := []byte(icsContent)
 
-	return cal.SerializeTo(file)
+	// If outputPath is provided, write to file (for CLI use)
+	if outputPath != "" {
+		err := os.WriteFile(outputPath, icsBytes, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("failed to write ICS file: %w", err)
+		}
+	}
+
+	return icsBytes, nil
 }

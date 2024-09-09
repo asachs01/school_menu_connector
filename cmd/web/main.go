@@ -8,7 +8,6 @@ import (
     "os"
     "runtime/debug"
     "strings"
-    "path/filepath"
 
     "github.com/asachs01/school_menu_connector/internal/menu"
     "github.com/asachs01/school_menu_connector/internal/ics"
@@ -113,29 +112,29 @@ func handleGenerate(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    var message string
     switch action {
     case "email":
-        message, err = handleEmail(data, menuData)
+        message, err := handleEmail(data, menuData)
+        if err != nil {
+            errorLog.Printf("Error handling email: %v", err)
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        response := map[string]string{"message": message}
+        w.Header().Set("Content-Type", "application/json")
+        if err := json.NewEncoder(w).Encode(response); err != nil {
+            errorLog.Printf("Error encoding response: %v", err)
+            http.Error(w, "Error encoding response", http.StatusInternalServerError)
+        }
     case "ics":
-        message, err = handleICS(data, menuData)
+        if err := handleICS(w, data, menuData); err != nil {
+            errorLog.Printf("Error handling ICS: %v", err)
+            http.Error(w, fmt.Sprintf("Error generating calendar file: %v", err), http.StatusInternalServerError)
+        }
+        // Don't write anything else here
     default:
         errorLog.Printf("Invalid action: %s", action)
         http.Error(w, "Invalid action", http.StatusBadRequest)
-        return
-    }
-
-    if err != nil {
-        errorLog.Printf("Error handling %s: %v", action, err)
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-
-    response := map[string]string{"message": message}
-    w.Header().Set("Content-Type", "application/json")
-    if err := json.NewEncoder(w).Encode(response); err != nil {
-        errorLog.Printf("Error encoding response: %v", err)
-        http.Error(w, "Error encoding response", http.StatusInternalServerError)
     }
 }
 
@@ -182,7 +181,7 @@ func handleEmail(data map[string]interface{}, menuData *menu.Menu) (string, erro
     return "Email sent successfully", nil
 }
 
-func handleICS(data map[string]interface{}, menuData *menu.Menu) (string, error) {
+func handleICS(w http.ResponseWriter, data map[string]interface{}, menuData *menu.Menu) error {
     buildingID := data["buildingId"].(string)
     districtID := data["districtId"].(string)
     startDate := data["startDate"].(string)
@@ -191,14 +190,36 @@ func handleICS(data map[string]interface{}, menuData *menu.Menu) (string, error)
     infoLog.Printf("Generating ICS file for buildingID: %s, districtID: %s, startDate: %s, endDate: %s", 
                    buildingID, districtID, startDate, endDate)
 
-    icsOutputPath := filepath.Join(".", fmt.Sprintf("lunch_menu_%s_to_%s.ics", startDate, endDate))
-
-    err := ics.GenerateICSFile(buildingID, districtID, startDate, endDate, icsOutputPath, false)
+    icsContent, err := ics.GenerateICSFile(buildingID, districtID, startDate, endDate, "", false)
     if err != nil {
-        errorLog.Printf("Error generating ICS file: %v", err)
-        return "", fmt.Errorf("failed to generate ICS file: %v", err)
+        errorLog.Printf("Failed to generate ICS file: %v", err)
+        return fmt.Errorf("failed to generate ICS file: %w", err)
     }
 
-    infoLog.Printf("ICS file generated successfully at: %s", icsOutputPath)
-    return "ICS file generated successfully: " + icsOutputPath, nil
+    infoLog.Printf("ICS file generated successfully, content length: %d bytes", len(icsContent))
+
+    filename := fmt.Sprintf("lunch_menu_%s_to_%s.ics", startDate, endDate)
+
+    infoLog.Printf("Setting headers: Content-Type: %s, Content-Disposition: %s, Content-Length: %d",
+        "text/calendar", fmt.Sprintf("attachment; filename=\"%s\"", filename), len(icsContent))
+
+    w.Header().Set("Content-Type", "text/calendar")
+    w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+    w.Header().Set("Content-Length", fmt.Sprintf("%d", len(icsContent)))
+    
+    n, err := w.Write(icsContent)
+    if err != nil {
+        errorLog.Printf("Error writing ICS content to response: %v", err)
+        return fmt.Errorf("error writing ICS content to response: %w", err)
+    }
+    infoLog.Printf("Wrote %d bytes to response", n)
+
+    // Log the first 100 characters of the ICS content
+    if len(icsContent) > 100 {
+        infoLog.Printf("First 100 characters of ICS content: %s", string(icsContent[:100]))
+    } else {
+        infoLog.Printf("ICS content: %s", string(icsContent))
+    }
+
+    return nil
 }

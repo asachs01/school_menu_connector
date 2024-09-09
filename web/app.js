@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('menuForm');
+    const submitButton = document.getElementById('submitButton');
     const actionSelect = document.getElementById('action');
     const emailFields = document.getElementById('emailFields');
     const dateRangeSelect = document.getElementById('dateRange');
@@ -39,6 +40,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // Change button text and disable it
+        submitButton.textContent = 'Processing...';
+        submitButton.disabled = true;
+
         const formData = new FormData(form);
         const data = Object.fromEntries(formData);
 
@@ -47,13 +53,8 @@ document.addEventListener('DOMContentLoaded', function() {
         data.startDate = formatDate(selectedDates[0]);
         data.endDate = selectedDates[1] ? formatDate(selectedDates[1]) : data.startDate;
 
-        // Include recipients only if action is email
-        if (data.action === 'email' && !data.recipients) {
-            document.getElementById('result').textContent = 'Please enter recipient email address(es)';
-            return;
-        }
-
         try {
+            console.log('Sending request with data:', data);
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
@@ -62,22 +63,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify(data),
             });
 
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
             }
 
-            const result = await response.json();
-            document.getElementById('result').textContent = result.message;
+            if (data.action === 'ics') {
+                const contentType = response.headers.get('Content-Type');
+                console.log('Content-Type:', contentType);
+
+                const text = await response.text();
+                console.log('Response as text:', text);
+
+                const blob = new Blob([text], {type: 'text/calendar'});
+                console.log('Blob size:', blob.size);
+                console.log('Blob type:', blob.type);
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `lunch_menu_${data.startDate}_to_${data.endDate}.ics`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.getElementById('result').textContent = 'Calendar file downloaded successfully.';
+            } else {
+                const result = await response.json();
+                document.getElementById('result').textContent = result.message;
+            }
         } catch (error) {
             console.error('Error:', error);
-            document.getElementById('result').textContent = 'An error occurred. Please try again.';
+            document.getElementById('result').textContent = `An error occurred: ${error.message}`;
+        } finally {
+            // Reset button text and re-enable it
+            submitButton.textContent = 'Submit';
+            submitButton.disabled = false;
         }
     });
-});
 
-function formatDate(date) {
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}-${day}-${year}`;
-}
+    function formatDate(date) {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${month}-${day}-${year}`;
+    }
+});
