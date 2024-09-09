@@ -90,13 +90,12 @@ func run(buildingID, districtID, recipients, sender, password, smtpServer, subje
 	}
 
 	if icsFlag {
-		if icsOutputPath == "" {
-			icsOutputPath = fmt.Sprintf("lunch_menu_%s_to_%s.ics", start.Format("01-02-2006"), end.Format("01-02-2006"))
+		outputPath := fmt.Sprintf("lunch_menu_%s_to_%s.ics", start.Format("01-02-2006"), end.Format("01-02-2006"))
+		_, err := ics.GenerateICSFile(buildingID, districtID, startDate, endDate, outputPath, debugFlag)
+		if err != nil {
+			return fmt.Errorf("failed to generate ICS file: %v", err)
 		}
-		if err := ics.GenerateICSFile(buildingID, districtID, start.Format("01-02-2006"), end.Format("01-02-2006"), icsOutputPath, debugFlag); err != nil {
-			return fmt.Errorf("creating ICS file: %w", err)
-		}
-		fmt.Printf("ICS file created at: %s\n", icsOutputPath)
+		fmt.Printf("ICS file generated successfully: %s\n", outputPath)
 	}
 
 	return nil
