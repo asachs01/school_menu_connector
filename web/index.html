@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Menu Connector</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>School Menu Connector</h1>
+        <form id="menuForm">
+            <div class="form-group">
+                <label for="buildingId">Building ID:</label>
+                <input type="text" id="buildingId" name="buildingId" required>
+            </div>
+
+            <div class="form-group">
+                <label for="districtId">District ID:</label>
+                <input type="text" id="districtId" name="districtId" required>
+            </div>
+
+            <div class="form-group">
+                <label for="dateRange">Date Range:</label>
+                <select id="dateRange" name="dateRange">
+                    <option value="day">Single Day</option>
+                    <option value="week">Week</option>
+                    <option value="month">Month</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="datePicker">Select Date(s):</label>
+                <input type="text" id="datePicker" name="datePicker" required>
+            </div>
+
+            <div class="form-group">
+                <label for="action">Action:</label>
+                <select id="action" name="action" required>
+                    <option value="email">Send Email</option>
+                    <option value="ics">Create Calendar File</option>
+                </select>
+            </div>
+
+            <div id="emailFields" style="display: none;">
+                <div class="form-group">
+                    <label for="recipients">Recipient Email(s):</label>
+                    <input type="text" id="recipients" name="recipients" placeholder="Enter email addresses separated by commas">
+                </div>
+            </div>
+
+            <button type="submit">Submit</button>
+        </form>
+        <div id="result"></div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
