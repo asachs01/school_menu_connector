@@ -1,4 +1,5 @@
 .DS_Store
 basic_details.txt
-linq_connect_menu_notifier
+school_menu_connector
+school_menu_connector_web
 *.ics

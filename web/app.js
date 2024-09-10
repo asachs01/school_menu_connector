@@ -7,9 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const datePicker = document.getElementById('datePicker');
 
     // Initialize Flatpickr
-    let fpicker = flatpickr(datePicker, {
+    let fpicker = flatpickr("#datePicker", {
         mode: "single",
-        dateFormat: "Y-m-d"
+        dateFormat: "Y-m-d",
+        // Add any other options you need here
     });
 
     // Function to toggle email fields visibility
@@ -41,20 +42,25 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        // Change button text and disable it
-        submitButton.textContent = 'Processing...';
-        submitButton.disabled = true;
-
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-
-        // Add date range to data
-        const selectedDates = fpicker.selectedDates;
-        data.startDate = formatDate(selectedDates[0]);
-        data.endDate = selectedDates[1] ? formatDate(selectedDates[1]) : data.startDate;
-
         try {
-            console.log('Sending request with data:', data);
+            // Near the top of your file, get the site key from the script URL
+            let recaptchaSiteKey = document.querySelector('script[src^="https://www.google.com/recaptcha/api.js?render="]').src.split('render=')[1];
+
+            // Then, when you need to execute reCAPTCHA:
+            const token = await grecaptcha.execute(recaptchaSiteKey, {action: 'submit'});
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            data.recaptchaToken = token;
+
+            // Change button text and disable it
+            submitButton.textContent = 'Processing...';
+            submitButton.disabled = true;
+
+            // Add date range to data
+            const selectedDates = fpicker.selectedDates;
+            data.startDate = formatDate(selectedDates[0]);
+            data.endDate = selectedDates[1] ? formatDate(selectedDates[1]) : data.startDate;
+
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: {
