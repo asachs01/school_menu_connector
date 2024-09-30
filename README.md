@@ -1,5 +1,5 @@
 ![Release](https://github.com/asachs01/school_menu_connector/actions/workflows/release.yml/badge.svg)
-<a href="https://www.buymeacoffee.com/asachs01" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" width="120" height="30" ></a>
+<!--<a href="https://www.buymeacoffee.com/asachs01" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" width="120" height="30" ></a>-->
 
 # School Menu Connector
 
