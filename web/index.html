@@ -14,6 +14,7 @@
             margin: 0 auto;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            hyphens: auto;
         }
         h1, h2 {
             color: #333;
@@ -22,6 +23,12 @@
             background-color: #f4f4f4;
             padding: 10px;
             border-radius: 5px;
+            white-space: pre-wrap;       /* CSS 3 */
+            white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+            white-space: -pre-wrap;      /* Opera 4-6 */
+            white-space: -o-pre-wrap;    /* Opera 7 */
+            word-wrap: break-word;       /* Internet Explorer 5.5+ */
+            overflow-x: auto;
         }
         .support-message {
             background-color: #f9f9f9;
@@ -56,6 +63,11 @@
             max-width: 200px;
             height: auto;
         }
+        .wrap-url {
+            word-break: break-all;
+            hyphens: auto;
+            max-width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -86,7 +98,7 @@
         <li>The shortcut will generate and download the ICS file for you</li>
     </ol>
 
-    <p>More information on how to get the building and district IDs can be found <a href="https://github.com/asachs01/school_menu_connector/blob/main/README.md#prerequisites">here</a>.</p>
+    <p class="wrap-url">More information on how to get the building and district IDs can be found <a href="https://github.com/asachs01/school_menu_connector/blob/main/README.md#prerequisites">here</a>.</p>
 
     <h2>API Endpoint</h2>
     <p>For the more technical folk out there, you can use the API to generate the ICS file:</p>
