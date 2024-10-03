@@ -36,8 +36,6 @@ curl -X POST https://localhost:8080/get-menu \
      -F "endDate=MM-DD-YYYY"
 ```
 
-
-
 ## Prerequisites
 
 The biggest thing that you need is the building and district IDs.  To find them:
