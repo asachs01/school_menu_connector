@@ -5,7 +5,6 @@ services:
     repo: asachs01/school_menu_connector
     branch: main
   dockerfile_path: Dockerfile
-  http_port: 8080
   run_command: ./main
   routes:
   - path: /
