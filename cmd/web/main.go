@@ -36,6 +36,7 @@ func main() {
 	}
 
 	logger.Infof("Server is running on http://localhost:%s", port)
+	logger.Infof("Routes: / and /get-menu are registered")
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
@@ -48,7 +49,11 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func getMenuHandler(w http.ResponseWriter, r *http.Request) {
-	logger.Info("Received request to /get-menu")
+	logger.WithFields(logrus.Fields{
+		"method": r.Method,
+		"path":   r.URL.Path,
+		"form":   r.Form,
+	}).Info("Received request to /get-menu")
 
 	if r.Method != http.MethodPost {
 		logger.Warn("Method not allowed")

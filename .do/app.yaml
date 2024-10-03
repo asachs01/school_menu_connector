@@ -8,3 +8,4 @@ services:
   run_command: ./main
   routes:
   - path: /
+  - path: /get-menu
