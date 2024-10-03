@@ -52,7 +52,10 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		logger.Warn("Method not allowed")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		message := "Error: Only POST requests are supported for this endpoint. Please use a POST request with the required form data to generate an ICS file."
+		w.Write([]byte(message))
 		return
 	}
 
