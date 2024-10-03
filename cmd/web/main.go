@@ -23,11 +23,12 @@ func init() {
 }
 
 func main() {
-	// Set up the HTTP server
-	http.HandleFunc("/get-menu", logMiddleware(getMenuHandler))
-	
-	// Serve static files
-	http.HandleFunc("/", logMiddleware(serveIndex))
+	// Create a new ServeMux
+	mux := http.NewServeMux()
+
+	// Set up the HTTP server with explicit routes
+	mux.HandleFunc("/get-menu", logMiddleware(getMenuHandler))
+	mux.HandleFunc("/", logMiddleware(serveIndex))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -35,16 +36,12 @@ func main() {
 	}
 
 	logger.Infof("Server is running on http://localhost:%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
-		return
-	}
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	http.ServeFile(w, r, filepath.Join("web", "index.html"))
@@ -138,8 +135,8 @@ func logMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.WithFields(logrus.Fields{
 			"method": r.Method,
-				"path":   r.URL.Path,
-				"ip":     r.RemoteAddr,
+			"path":   r.URL.Path,
+			"ip":     r.RemoteAddr,
 		}).Info("Request received")
 		next.ServeHTTP(w, r)
 	}
