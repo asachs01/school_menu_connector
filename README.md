@@ -204,3 +204,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Thanks and Credits
 
 Thank you to @evanhsu for his work on the [Magic Mirror module](https://github.com/evanhsu/MMM-TitanSchoolMealMenu/tree/main) that inspired this project
+
+## Siri Shortcut
+
+A Siri shortcut is available for easy access to the School Menu Connector. You can find the shortcut [here](https://www.icloud.com/shortcuts/31cb63a18a8a49ef8afccfc8771dc6e0), or scan the QR code available on the main page of the web application.

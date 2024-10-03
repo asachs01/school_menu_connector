@@ -30,6 +30,10 @@ func main() {
 	mux.HandleFunc("/get-menu", logMiddleware(getMenuHandler))
 	mux.HandleFunc("/", logMiddleware(serveIndex))
 
+	// Serve static files
+	fs := http.FileServer(http.Dir("web"))
+	mux.Handle("/web/", http.StripPrefix("/web/", fs))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
