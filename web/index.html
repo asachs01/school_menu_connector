@@ -67,7 +67,7 @@
         </a>
     </div>
 
-    <p>This service allows you to generate an ICS file for your school's menu on Linq Connectc using a Siri shortcut or API call.</p>
+    <p>This service allows you to generate an ICS file for your school's menu on Linq Connect using a Siri shortcut or API call. Right now, Linq Connect is the only supported platform. There may be other platforms supported in the future.</p>
     
     <h2>How to Use</h2>
     <ol>
@@ -87,9 +87,9 @@
     <p>More information on how to get the building and district IDs can be found <a href="https://github.com/asachs01/school_menu_connector/blob/main/README.md">here</a>.</p>
 
     <h2>API Endpoint</h2>
-    <p>For advanced users, you can directly use our API endpoint:</p>
-    <pre>POST https://schoolmenuconnector.com/get-menu</pre>
-    <p><strong>Note:</strong> Only POST requests are supported for this endpoint.</p>
+    <p>For the more technical folk out there, you can use the API to generate the ICS file:</p>
+    <pre>curl -s -X POST -d "buildingId=1234&districtId=5678&startDate=10-01-2024&endDate=10-31-2024" https://schoolmenuconnector.com/get-menu -o school_menu.ics</pre>
+    <p><strong>Note:</strong> Only POSTs are supported for the endpoint.</p>
     <p>Parameters (send as form data):</p>
     <ul>
         <li>buildingId</li>
