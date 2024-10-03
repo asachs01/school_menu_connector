@@ -41,7 +41,13 @@ func main() {
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request) {
+	logger.WithFields(logrus.Fields{
+		"method": r.Method,
+		"path":   r.URL.Path,
+	}).Info("Received request to serve index")
+
 	if r.URL.Path != "/" {
+		logger.Warn("Not found")
 		http.NotFound(w, r)
 		return
 	}

@@ -7,5 +7,4 @@ services:
   dockerfile_path: Dockerfile
   run_command: ./main
   routes:
-  - path: /
-  - path: /get-menu
+  - path: /...
