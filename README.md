@@ -11,6 +11,32 @@ School Menu Connector is a Go application that fetches school lunch menus from t
 - Send menus via email
 - Configurable through command-line flags or environment variables
 - Customizable email subject
+- Generate ICS files via web API endpoint
+
+## Web API
+
+While there is a CLI tool that you can use to send emails and generate ICS files, School Menu Connector now provides a web API for generating ICS files:
+
+### API Endpoint
+
+Send a POST request to `/get-menu` with the following form data:
+
+- `buildingId`: The ID of the school building
+- `districtId`: The ID of the school district
+- `startDate`: Start date for the menu (format: MM-DD-YYYY)
+- `endDate`: End date for the menu (format: MM-DD-YYYY)
+
+Example using curl:
+
+```
+curl -X POST https://localhost:8080/get-menu \
+     -F "buildingId=YOUR_BUILDING_ID" \
+     -F "districtId=YOUR_DISTRICT_ID" \
+     -F "startDate=MM-DD-YYYY" \
+     -F "endDate=MM-DD-YYYY"
+```
+
+
 
 ## Prerequisites
 

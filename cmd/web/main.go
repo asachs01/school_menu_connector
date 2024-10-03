@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/asachs01/school_menu_connector/internal/ics"
@@ -24,6 +25,9 @@ func init() {
 func main() {
 	// Set up the HTTP server
 	http.HandleFunc("/get-menu", logMiddleware(getMenuHandler))
+	
+	// Serve static files
+	http.HandleFunc("/", serveIndex)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -32,6 +36,14 @@ func main() {
 
 	logger.Infof("Server is running on http://localhost:%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+func serveIndex(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	http.ServeFile(w, r, filepath.Join("web", "index.html"))
 }
 
 func getMenuHandler(w http.ResponseWriter, r *http.Request) {
