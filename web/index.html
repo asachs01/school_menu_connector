@@ -4,58 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Menu Connector</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
-    <script src="app.js" defer></script>
-    <script src="https://www.google.com/recaptcha/api.js?render=RECAPTCHA_SITE_KEY" async defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>School Menu Connector</h1>
-        <form id="menuForm">
-            <div class="form-group">
-                <label for="buildingId">Building ID:</label>
-                <input type="text" id="buildingId" name="buildingId" required>
-            </div>
+    <h1>School Menu Connector</h1>
+    <p>This service allows you to generate an ICS file for your school's menu using a Siri shortcut.</p>
+    
+    <h2>How to Use</h2>
+    <ol>
+        <li>Install the Siri shortcut (link coming soon)</li>
+        <li>Run the shortcut and provide the following information:
+            <ul>
+                <li>Building ID</li>
+                <li>District ID</li>
+                <li>Start Date (MM-DD-YYYY)</li>
+                <li>End Date (MM-DD-YYYY)</li>
+            </ul>
+        </li>
+        <li>The shortcut will generate and download the ICS file for you</li>
+    </ol>
 
-            <div class="form-group">
-                <label for="districtId">District ID:</label>
-                <input type="text" id="districtId" name="districtId" required>
-            </div>
+    <h2>API Endpoint</h2>
+    <p>For advanced users, you can directly use our API endpoint:</p>
+    <pre>POST https://your-do-app-url.ondigitalocean.app/get-menu</pre>
+    <p>Parameters (send as form data):</p>
+    <ul>
+        <li>buildingId</li>
+        <li>districtId</li>
+        <li>startDate</li>
+        <li>endDate</li>
+    </ul>
 
-            <div class="form-group">
-                <label for="dateRange">Date Range:</label>
-                <select id="dateRange" name="dateRange">
-                    <option value="day">Single Day</option>
-                    <option value="week">Week</option>
-                    <option value="month">Month</option>
-                </select>
-            </div>
+    <h2>Siri Shortcut</h2>
+    <p>Link to the Siri shortcut will be added here once it's created and published.</p>
 
-            <div class="form-group">
-                <label for="datePicker">Select Date(s):</label>
-                <input type="text" id="datePicker" name="datePicker" placeholder="Select date(s)" required>
-            </div>
-
-            <div class="form-group">
-                <label for="action">Action:</label>
-                <select id="action" name="action" required>
-                    <option value="email">Send Email</option>
-                    <option value="ics">Create Calendar File</option>
-                </select>
-            </div>
-
-            <div id="emailFields" style="display: none;">
-                <div class="form-group">
-                    <label for="recipients">Recipient Email(s):</label>
-                    <input type="text" id="recipients" name="recipients" placeholder="Enter email addresses separated by commas">
-                </div>
-            </div>
-
-            <button type="submit" id="submitButton">Submit</button>
-        </form>
-        <div id="result"></div>
-    </div>
+    <footer>
+        <p>Created by [Your Name]. Source code available on <a href="https://github.com/yourusername/school_menu_connector">GitHub</a>.</p>
+    </footer>
 </body>
 </html>

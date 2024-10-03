@@ -3,3 +3,14 @@ basic_details.txt
 school_menu_connector
 school_menu_connector_web
 *.ics
+*.json
+*.har
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+.env

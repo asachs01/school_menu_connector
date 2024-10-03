@@ -1,0 +1,10 @@
+name: school-menu-connector
+services:
+- name: web
+  github:
+    repo: yourusername/school_menu_connector
+    branch: main
+  dockerfile_path: Dockerfile
+  http_port: 8080
+  routes:
+  - path: /
