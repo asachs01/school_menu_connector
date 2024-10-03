@@ -186,9 +186,16 @@ Optionally, you can specify an output path for the ICS file:
 - If using Gmail as your SMTP server, you may need to use an "App Password" instead of your regular password and enable "Less secure app access" in your Google Account settings.
 - Handle email credentials securely and avoid committing them to version control.
 
+## Deployment
+
+When deploying to DigitalOcean App Platform:
+
+1. Ensure that the "Preserve Path Prefix" option is checked for your routes in the App Platform configuration.
+2. This setting allows the full request path to be passed to your application, which is crucial for proper routing.
+
 ## License
 
-[MIT License](LICENSE)
+[GPLv3](LICENSE)
 
 ## Contributing
 

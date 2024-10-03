@@ -8,3 +8,4 @@ services:
   run_command: ./main
   routes:
   - path: /...
+    preserve_path_prefix: true
