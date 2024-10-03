@@ -13,7 +13,7 @@
             max-width: 800px;
             margin: 0 auto;
         }
-        h1 {
+        h1, h2 {
             color: #333;
         }
         pre {
@@ -21,10 +21,44 @@
             padding: 10px;
             border-radius: 5px;
         }
+        .support-message {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .support-message h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .strikethrough {
+            text-decoration: line-through;
+        }
+        footer {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .support-message img {
+            width: 180px;  /* Increased from 120px */
+            height: 45px;  /* Increased from 30px */
+        }
     </style>
 </head>
 <body>
     <h1>School Menu Connector</h1>
+
+    <div class="support-message">
+        <h2>Support the Project</h2>
+        <p>If you use this service at all and find it helpful, please consider supporting my <span class="strikethrough">caffeine habit</span> work by buying me a coffee.</p>
+        <a href="https://www.buymeacoffee.com/asachs01" target="_blank">
+            <img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" width="180" height="45">
+        </a>
+    </div>
+
     <p>This service allows you to generate an ICS file for your school's menu using a Siri shortcut.</p>
     
     <h2>How to Use</h2>
@@ -56,7 +90,7 @@
     <p>Link to the Siri shortcut will be added here once it's created and published.</p>
 
     <footer>
-        <p>Created by [Your Name]. Source code available on <a href="https://github.com/yourusername/school_menu_connector">GitHub</a>.</p>
+        <p>Created by Aaron Sachs. Source code available on <a href="https://github.com/asachs01/school_menu_connector">GitHub</a>.</p>
     </footer>
 </body>
 </html>
