@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Calendar base -->
+  <rect x="64" y="96" width="384" height="352" fill="#0d6efd" rx="16"/>
+  <rect x="64" y="96" width="384" height="80" fill="#0b5ed7" rx="16"/>
+  
+  <!-- Calendar top bars -->
+  <rect x="128" y="48" width="32" height="96" fill="#0b5ed7" rx="8"/>
+  <rect x="352" y="48" width="32" height="96" fill="#0b5ed7" rx="8"/>
+  
+  <!-- Calendar grid - vertical lines -->
+  <path d="M141 176 L141 448" stroke="#0b5ed7" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M218 176 L218 448" stroke="#0b5ed7" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M295 176 L295 448" stroke="#0b5ed7" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M372 176 L372 448" stroke="#0b5ed7" stroke-width="2" stroke-opacity="0.5"/>
+  
+  <!-- Calendar grid - horizontal lines -->
+  <path d="M64 216 L448 216" stroke="#0b5ed7" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M64 280 L448 280" stroke="#0b5ed7" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M64 344 L448 344" stroke="#0b5ed7" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M64 408 L448 408" stroke="#0b5ed7" stroke-width="2" stroke-opacity="0.5"/>
+  
+  <!-- Two-way arrow - wider -->
+  <path d="M128 280 L384 280" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <!-- Arrow heads -->
+  <path d="M128 280 L178 230" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <path d="M128 280 L178 330" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <path d="M384 280 L334 230" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <path d="M384 280 L334 330" stroke="white" stroke-width="24" stroke-linecap="round"/>
+</svg> 
