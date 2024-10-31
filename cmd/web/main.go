@@ -32,7 +32,7 @@ func main() {
 	mux.HandleFunc("/", logMiddleware(serveIndex))
 
 	// Serve static files
-	fs := http.FileServer(http.Dir("web"))
+	fs := http.FileServer(http.Dir("web/static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	port := os.Getenv("PORT")
