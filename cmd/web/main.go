@@ -28,11 +28,12 @@ func main() {
 
 	// Set up the HTTP server with explicit routes
 	mux.HandleFunc("/get-menu", logMiddleware(getMenuHandler))
+	mux.HandleFunc("/menu", logMiddleware(serveMenuForm))
 	mux.HandleFunc("/", logMiddleware(serveIndex))
 
 	// Serve static files
 	fs := http.FileServer(http.Dir("web"))
-	mux.Handle("/web/", http.StripPrefix("/web/", fs))
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -158,4 +159,8 @@ func logMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}).Info("Request received")
 		next.ServeHTTP(w, r)
 	}
+}
+
+func serveMenuForm(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, filepath.Join("web", "menu_form.html"))
 }
