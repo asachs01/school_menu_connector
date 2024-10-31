@@ -68,6 +68,41 @@
             hyphens: auto;
             max-width: 100%;
         }
+        .menu-button-container {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .menu-button-text {
+            margin: 0;
+        }
+        .menu-button-text h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #333;
+        }
+        .menu-button-text p {
+            margin: 5px 0 0 0;
+            color: #666;
+        }
+        .menu-access-button {
+            background-color: #0d6efd;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .menu-access-button:hover {
+            background-color: #0b5ed7;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -81,7 +116,15 @@
         </a>
     </div>
 
-    <p>This service allows you to generate an ICS file for your school's menu on Linq Connect using a Siri shortcut or API call. Right now, Linq Connect is the only supported platform. There may be other platforms supported in the future.</p>
+    <div class="menu-button-container">
+        <div class="menu-button-text">
+            <h2>School Menu Calendar</h2>
+            <p>Download your school menu 👉</p>
+        </div>
+        <a href="/menu" class="menu-access-button">Get Started</a>
+    </div>
+
+    <p>This service allows you to download your school's menu calendar directly to your device using our <a href="/menu">simple menu form</a>. For automation, you can also use a Siri shortcut or make an API call. Right now, Linq Connect is the only supported platform. There may be other platforms supported in the future.</p>
     
     <h2>How to Use</h2>
     <ol>

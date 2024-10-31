@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Menu Calendar - Hamilton County Schools Menu Connector</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container { max-width: 800px; margin-top: 2rem; }
+        #loadingMessage { display: none; }
+        #errorMessage { display: none; color: red; }
+        .card { background-color: #f9f9f9; border: 1px solid #ddd; }
+        
+        /* Update date input styling */
+        input[type="date"] {
+            color: #666;
+            position: relative;
+        }
+        
+        /* Override the default date picker appearance */
+        input[type="date"]::-webkit-datetime-edit { color: #666; }
+        input[type="date"]::-webkit-datetime-edit-fields-wrapper { color: #666; }
+        input[type="date"]::-webkit-datetime-edit-text { color: #666; }
+        input[type="date"]::-webkit-datetime-edit-month-field { color: #666; }
+        input[type="date"]::-webkit-datetime-edit-day-field { color: #666; }
+        input[type="date"]::-webkit-datetime-edit-year-field { color: #666; }
+        input[type="date"]::-webkit-calendar-picker-indicator { 
+            filter: invert(0.5);
+            opacity: 0.5;
+        }
+        
+        .processing-notice {
+            margin-top: 1rem;
+            margin-bottom: 2rem; /* Add more space after the notice */
+            padding: 0.75rem;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 0.25rem;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">School Menu Calendar</h1>
+        <p class="lead mb-4">Download your school's menu directly to your calendar.</p>
+        
+        <div id="loadingMessage" class="alert alert-info">
+            Loading schools...
+        </div>
+        
+        <div id="errorMessage" class="alert alert-danger">
+            Unable to load schools. Please try again later.
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <div class="processing-notice">
+                    <strong>Note:</strong> Processing time increases with larger date ranges. For best performance, consider limiting your request to 1-2 months at a time.
+                </div>
+                <form action="/get-menu" method="POST">
+                    <input type="hidden" name="districtId" id="districtId">
+                    
+                    <div class="mb-3">
+                        <label for="school" class="form-label">Select Your School:</label>
+                        <select name="buildingId" id="schoolSelect" class="form-select" required>
+                            <option value="">Choose a school...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="startDate" class="form-label">Start Date:</label>
+                        <input type="date" name="startDate" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="endDate" class="form-label">End Date:</label>
+                        <input type="date" name="endDate" class="form-control" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Download Menu Calendar</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="/" class="btn btn-link">&larr; Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loadingMessage = document.getElementById('loadingMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const schoolSelect = document.getElementById('schoolSelect');
+            const districtIdInput = document.getElementById('districtId');
+
+            loadingMessage.style.display = 'block';
+            
+            try {
+                const response = await fetch('https://api.linqconnect.com/api/FamilyMenuIdentifier?identifier=4QDPT3');
+                const data = await response.json();
+                
+                // Set the district ID
+                districtIdInput.value = data.DistrictId;
+                
+                // Sort schools alphabetically
+                const sortedSchools = data.Buildings.sort((a, b) => 
+                    a.Name.localeCompare(b.Name)
+                );
+                
+                // Add schools to dropdown
+                sortedSchools.forEach(school => {
+                    const option = document.createElement('option');
+                    option.value = school.BuildingId;
+                    option.textContent = school.Name;
+                    schoolSelect.appendChild(option);
+                });
+                
+                loadingMessage.style.display = 'none';
+            } catch (error) {
+                console.error('Error loading schools:', error);
+                loadingMessage.style.display = 'none';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html> 
