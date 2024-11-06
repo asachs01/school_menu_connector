@@ -140,10 +140,14 @@
     <ol>
         <li>Install the <a href="https://www.icloud.com/shortcuts/31cb63a18a8a49ef8afccfc8771dc6e0">Siri shortcut</a></li>
         <li>OPTIONAL: Add the <a href="https://routinehub.co/shortcut/7005/">ICS to Calendar shortcut</a></li>
-        <li>Run the shortcut and provide the following information:
+        <li>Go to the <a href="/menu">menu form</a> and find your school - you'll see something like:
             <ul>
-                <li>Building ID</li>
-                <li>District ID</li>
+                <li>"Sample District (12345)" - use 12345 as your District ID</li>
+                <li>"Sample School (67890)" - use 67890 as your Building ID</li>
+            </ul>
+        </li>
+        <li>Run the shortcut and enter these IDs along with:
+            <ul>
                 <li>Start Date (MM-DD-YYYY)</li>
                 <li>End Date (MM-DD-YYYY)</li>
             </ul>
@@ -151,9 +155,10 @@
         <li>The shortcut will generate and download the ICS file for you</li>
     </ol>
 
-    <p class="wrap-url">More information on how to get the building and district IDs can be found <a href="https://github.com/asachs01/school_menu_connector/blob/main/README.md#prerequisites">here</a>.</p>
-
     <h2>API Endpoint</h2>
+
+    <p class="wrap-url">If using the API, you'll need to get your building and district IDs. More information on how to get the building and district IDs can be found <a href="https://github.com/asachs01/school_menu_connector/blob/main/README.md#prerequisites">here</a>. You can also use the <a href="/menu">menu form</a> to get these IDs.</p>
+
     <p>For the more technical folk out there, you can use the API to generate the ICS file:</p>
     <pre>curl -s -X POST -d "buildingId=1234&districtId=5678&startDate=10-01-2024&endDate=10-31-2024" https://schoolmenuconnector.com/get-menu -o school_menu.ics</pre>
     <p><strong>Note:</strong> Only POSTs are supported for the endpoint.</p>

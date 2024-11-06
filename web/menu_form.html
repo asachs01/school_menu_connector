@@ -6,6 +6,10 @@
     <title>School Menu Calendar - Hamilton County Schools Menu Connector</title>
     <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -87,6 +91,85 @@
             margin: 0;
             color: #333;
         }
+
+        /* Search box styling */
+        .search-box {
+            margin-bottom: 10px;
+        }
+
+        /* Copy button styling */
+        .copy-button {
+            padding: 4px 8px;
+            color: #666;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-left: 4px;
+            display: inline-flex;
+            align-items: center;
+            transition: color 0.2s ease;
+        }
+
+        .copy-button:hover {
+            color: #333;
+        }
+
+        /* ID display styling */
+        .id-display {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .id-text {
+            font-family: monospace;
+            padding: 2px 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border-radius: 5px;
+            display: none;
+            animation: fadeInOut 2s ease-in-out;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Select2 customization */
+        .select2-container--default .select2-selection--single {
+            height: 38px;
+            padding: 5px;
+            border: 1px solid #ced4da;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border: 1px solid #ced4da;
+            padding: 6px;
+        }
+
+        .select2-results__option {
+            padding: 8px 12px;
+        }
     </style>
 </head>
 <body>
@@ -112,13 +195,31 @@
                     <strong>Note:</strong> Processing time increases with larger date ranges. For best performance, consider limiting your request to 1-2 months at a time.
                 </div>
                 <form action="/get-menu" method="POST">
-                    <input type="hidden" name="districtId" id="districtId">
-                    
                     <div class="mb-3">
-                        <label for="school" class="form-label">Select Your School:</label>
-                        <select name="buildingId" id="schoolSelect" class="form-select" required>
-                            <option value="">Choose a school...</option>
+                        <label class="form-label">District</label>
+                        <select class="form-select" name="districtId" id="districtSelect" required>
+                            <option value="">Select your district...</option>
                         </select>
+                        <div class="id-display" id="districtIdDisplay" style="display: none;">
+                            ID: <span class="id-text" id="districtIdText"></span>
+                            <button type="button" class="copy-button" onclick="copyId('district')" title="Copy ID">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Currently only supporting Hamilton County Schools</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">School</label>
+                        <select class="form-select" name="buildingId" id="schoolSelect" required>
+                            <option value="">Select your school...</option>
+                        </select>
+                        <div class="id-display" id="schoolIdDisplay" style="display: none;">
+                            ID: <span class="id-text" id="schoolIdText"></span>
+                            <button type="button" class="copy-button" onclick="copyId('school')" title="Copy ID">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -136,6 +237,8 @@
             </div>
         </div>
 
+        <div id="copyToast" class="toast">ID copied to clipboard!</div>
+
         <div class="mt-4">
             <a href="/" class="btn btn-link">&larr; Back to Home</a>
         </div>
@@ -146,37 +249,101 @@
             const loadingMessage = document.getElementById('loadingMessage');
             const errorMessage = document.getElementById('errorMessage');
             const schoolSelect = document.getElementById('schoolSelect');
-            const districtIdInput = document.getElementById('districtId');
-
+            const districtSelect = document.getElementById('districtSelect');
+            
             loadingMessage.style.display = 'block';
             
             try {
                 const response = await fetch('https://api.linqconnect.com/api/FamilyMenuIdentifier?identifier=4QDPT3');
                 const data = await response.json();
                 
-                // Set the district ID
-                districtIdInput.value = data.DistrictId;
+                // Initialize district select2
+                $(districtSelect).select2({
+                    placeholder: 'Search for your district...',
+                    data: [{
+                        id: data.DistrictId,
+                        text: data.DistrictName
+                    }],
+                    width: '100%',
+                    closeOnSelect: true,
+                    selectOnClose: true
+                }).on('select2:open', () => {
+                    document.querySelector('.select2-search__field').focus();
+                });
+
+                // Set initial district value
+                $(districtSelect).val(data.DistrictId).trigger('change');
+                document.getElementById('districtIdDisplay').style.display = 'flex';
+                document.getElementById('districtIdText').textContent = data.DistrictId;
                 
-                // Sort schools alphabetically
-                const sortedSchools = data.Buildings.sort((a, b) => 
-                    a.Name.localeCompare(b.Name)
-                );
+                // Sort and populate schools
+                const sortedSchools = data.Buildings.sort((a, b) => a.Name.localeCompare(b.Name));
                 
-                // Add schools to dropdown
-                sortedSchools.forEach(school => {
-                    const option = document.createElement('option');
-                    option.value = school.BuildingId;
-                    option.textContent = school.Name;
-                    schoolSelect.appendChild(option);
+                // Initialize school select2
+                $(schoolSelect).select2({
+                    placeholder: 'Search for your school...',
+                    data: sortedSchools.map(school => ({
+                        id: school.BuildingId,
+                        text: school.Name
+                    })),
+                    width: '100%',
+                    closeOnSelect: true,
+                    selectOnClose: true
+                }).on('select2:open', () => {
+                    document.querySelector('.select2-search__field').focus();
                 });
                 
                 loadingMessage.style.display = 'none';
+
+                // Add click event listener to close dropdowns when clicking outside
+                $(document).on('click', function(e) {
+                    if (!$(e.target).closest('.select2-container').length) {
+                        $(districtSelect).select2('close');
+                        $(schoolSelect).select2('close');
+                    }
+                });
+
             } catch (error) {
                 console.error('Error loading schools:', error);
                 loadingMessage.style.display = 'none';
                 errorMessage.style.display = 'block';
             }
+
+            // Show district ID when selected
+            $(districtSelect).on('change', function() {
+                const districtIdDisplay = document.getElementById('districtIdDisplay');
+                const districtIdText = document.getElementById('districtIdText');
+                if (this.value) {
+                    districtIdText.textContent = this.value;
+                    districtIdDisplay.style.display = 'flex';
+                } else {
+                    districtIdDisplay.style.display = 'none';
+                }
+            });
+
+            // Show school ID when selected
+            $(schoolSelect).on('change', function() {
+                const schoolIdDisplay = document.getElementById('schoolIdDisplay');
+                const schoolIdText = document.getElementById('schoolIdText');
+                if (this.value) {
+                    schoolIdText.textContent = this.value;
+                    schoolIdDisplay.style.display = 'flex';
+                } else {
+                    schoolIdDisplay.style.display = 'none';
+                }
+            });
         });
+
+        function copyId(type) {
+            const idText = document.getElementById(`${type}IdText`).textContent;
+            navigator.clipboard.writeText(idText).then(() => {
+                const toast = document.getElementById('copyToast');
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 2000);
+            });
+        }
     </script>
 </body>
 </html> 
