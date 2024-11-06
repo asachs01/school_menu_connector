@@ -170,6 +170,19 @@
         .select2-results__option {
             padding: 8px 12px;
         }
+
+        /* Add spinner styling */
+        .spinner-border-sm {
+            margin-right: 8px;
+            width: 1rem;
+            height: 1rem;
+        }
+
+        /* Disabled button state */
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
     </style>
 </head>
 <body>
@@ -194,7 +207,7 @@
                 <div class="processing-notice">
                     <strong>Note:</strong> Processing time increases with larger date ranges. For best performance, consider limiting your request to 1-2 months at a time.
                 </div>
-                <form action="/get-menu" method="POST">
+                <form action="/get-menu" method="POST" id="menuForm">
                     <div class="mb-3">
                         <label class="form-label">District</label>
                         <select class="form-select" name="districtId" id="districtSelect" required>
@@ -232,7 +245,10 @@
                         <input type="date" name="endDate" class="form-control" required>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Download Menu Calendar</button>
+                    <button type="submit" class="btn btn-primary" id="submitButton">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="submitSpinner"></span>
+                        <span id="submitText">Download Menu Calendar</span>
+                    </button>
                 </form>
             </div>
         </div>
@@ -344,6 +360,25 @@
                 }, 2000);
             });
         }
+
+        // Add form submission handling
+        document.getElementById('menuForm').addEventListener('submit', function(e) {
+            const submitButton = document.getElementById('submitButton');
+            const submitSpinner = document.getElementById('submitSpinner');
+            const submitText = document.getElementById('submitText');
+
+            // Disable button and show spinner
+            submitButton.disabled = true;
+            submitSpinner.classList.remove('d-none');
+            submitText.textContent = 'Generating Calendar...';
+
+            // Re-enable after 10 seconds in case of errors
+            setTimeout(() => {
+                submitButton.disabled = false;
+                submitSpinner.classList.add('d-none');
+                submitText.textContent = 'Download Menu Calendar';
+            }, 10000);
+        });
     </script>
 </body>
 </html> 
