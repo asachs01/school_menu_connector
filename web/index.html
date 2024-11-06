@@ -134,12 +134,34 @@
         <a href="/menu" class="menu-access-button">Get Started</a>
     </div>
 
-    <p>This service allows you to download your school's menu calendar directly to your device using a <a href="/menu">simple menu form</a>. For automation, you can also use a Siri shortcut or make an API call. Right now, Linq Connect is the only supported platform. There may be other platforms supported in the future.</p>
+    <p>This service allows you to download your school's menu calendar directly to your device using a <a href="/menu">simple menu form</a>. For automation, you can use our API directly or through our Siri shortcut. Right now, Linq Connect is the only supported platform. There may be other platforms supported in the future.</p>
     
-    <h2>How to Use the Siri Shortcut</h2>
+    <h2>API Endpoint</h2>
+    <p>For the more technical folk out there, you can use the API to generate the ICS file:</p>
+    <pre>curl -s -X POST \
+    -H "Content-Type: application/json" \
+    -d '{
+    "buildingId": "1234",
+    "districtId": "5678",
+    "startDate": "10-01-2024",
+    "endDate": "10-31-2024"
+}' https://schoolmenuconnector.com/get-menu -o school_menu.ics</pre>
+    <p><strong>Note:</strong> Only POSTs are supported for the endpoint.</p>
+    <p>Parameters (send as JSON):</p>
+    <ul>
+        <li><code>buildingId</code> - The school's building ID</li>
+        <li><code>districtId</code> - The district ID</li>
+        <li><code>startDate</code> - Start date in MM-DD-YYYY format</li>
+        <li><code>endDate</code> - End date in MM-DD-YYYY format</li>
+    </ul>
+
+    <h2>Siri Shortcut Integration</h2>
+    <p>For iOS users who want to automate menu downloads using the API above, you can use our Siri shortcut:</p>
     <ol>
         <li>Install the <a href="https://www.icloud.com/shortcuts/31cb63a18a8a49ef8afccfc8771dc6e0">Siri shortcut</a></li>
         <li>OPTIONAL: Add the <a href="https://routinehub.co/shortcut/7005/">ICS to Calendar shortcut</a></li>
+      
+        <li>The shortcut will prompt you for the same parameters as the API:
         <li>Go to the <a href="/menu">menu form</a> and find your school - you'll see something like:
             <ul>
                 <li>"Sample District (12345)" - use 12345 as your District ID</li>
@@ -152,7 +174,6 @@
                 <li>End Date (MM-DD-YYYY)</li>
             </ul>
         </li>
-        <li>The shortcut will generate and download the ICS file for you</li>
     </ol>
 
     <h2>API Endpoint</h2>
