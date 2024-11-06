@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -59,38 +60,67 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filepath.Join("web", "index.html"))
 }
 
+// Add this struct for JSON requests
+type MenuRequest struct {
+	BuildingID string `json:"buildingId"`
+	DistrictID string `json:"districtId"`
+	StartDate  string `json:"startDate"`
+	EndDate    string `json:"endDate"`
+}
+
 func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 	logger.WithFields(logrus.Fields{
 		"method": r.Method,
 		"path":   r.URL.Path,
-		"form":   r.Form,
 	}).Info("Received request to /get-menu")
 
 	if r.Method != http.MethodPost {
 		logger.Warn("Method not allowed")
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		message := "Error: Only POST requests are supported for this endpoint. Please use a POST request with the required form data to generate an ICS file."
+		message := "Error: Only POST requests are supported for this endpoint."
 		w.Write([]byte(message))
 		return
 	}
 
-	// Parse the form data
-	err := r.ParseForm()
-	if err != nil {
-		logger.WithError(err).Error("Error parsing form data")
-		http.Error(w, "Error parsing form data", http.StatusBadRequest)
+	var buildingID, districtID, startDate, endDate string
+	contentType := r.Header.Get("Content-Type")
+
+	// Handle JSON requests
+	if contentType == "application/json" {
+		var req MenuRequest
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&req); err != nil {
+			logger.WithError(err).Error("Error parsing JSON request")
+			http.Error(w, "Error parsing JSON request", http.StatusBadRequest)
+			return
+		}
+		buildingID = req.BuildingID
+		districtID = req.DistrictID
+		startDate = req.StartDate
+		endDate = req.EndDate
+	} else {
+		// Handle form data requests
+		if err := r.ParseForm(); err != nil {
+			logger.WithError(err).Error("Error parsing form data")
+			http.Error(w, "Error parsing form data", http.StatusBadRequest)
+			return
+		}
+		buildingID = r.Form.Get("buildingId")
+		districtID = r.Form.Get("districtId")
+		startDate = r.Form.Get("startDate")
+		endDate = r.Form.Get("endDate")
+	}
+
+	// Validate required fields
+	if buildingID == "" || districtID == "" || startDate == "" || endDate == "" {
+		logger.Error("Missing required fields")
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
 
-	// Get parameters from the form data
-	buildingID := r.Form.Get("buildingId")
-	districtID := r.Form.Get("districtId")
-	startDate := r.Form.Get("startDate")
-	endDate := r.Form.Get("endDate")
-
-	// Validate and convert dates if necessary
-	startDate, err = validateAndConvertDate(startDate)
+	// Validate and convert dates
+	startDate, err := validateAndConvertDate(startDate)
 	if err != nil {
 		logger.WithError(err).Error("Invalid start date")
 		http.Error(w, fmt.Sprintf("Invalid start date: %v", err), http.StatusBadRequest)
@@ -111,7 +141,7 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 		"endDate":    endDate,
 	}).Info("Generating ICS file")
 
-	// Generate the ICS file based on the parameters
+	// Generate the ICS file
 	icsContent, err := ics.GenerateICSFile(buildingID, districtID, startDate, endDate, "", false)
 	if err != nil {
 		logger.WithError(err).Error("Error generating ICS file")
@@ -121,13 +151,12 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Infof("ICS file generated successfully, content length: %d bytes", len(icsContent))
 
-	// Set the content type and headers for file download
+	// Set response headers
 	w.Header().Set("Content-Type", "text/calendar")
 	w.Header().Set("Content-Disposition", "attachment; filename=school_menu.ics")
 
-	// Write the ICS data to the response
-	_, err = w.Write(icsContent)
-	if err != nil {
+	// Write response
+	if _, err = w.Write(icsContent); err != nil {
 		logger.WithError(err).Error("Error writing response")
 	} else {
 		logger.Info("ICS file sent successfully")
