@@ -176,21 +176,6 @@
         </li>
     </ol>
 
-    <h2>API Endpoint</h2>
-
-    <p class="wrap-url">If using the API, you'll need to get your building and district IDs. More information on how to get the building and district IDs can be found <a href="https://github.com/asachs01/school_menu_connector/blob/main/README.md#prerequisites">here</a>. You can also use the <a href="/menu">menu form</a> to get these IDs.</p>
-
-    <p>For the more technical folk out there, you can use the API to generate the ICS file:</p>
-    <pre>curl -s -X POST -d "buildingId=1234&districtId=5678&startDate=10-01-2024&endDate=10-31-2024" https://schoolmenuconnector.com/get-menu -o school_menu.ics</pre>
-    <p><strong>Note:</strong> Only POSTs are supported for the endpoint.</p>
-    <p>Parameters (send as form data):</p>
-    <ul>
-        <li>buildingId</li>
-        <li>districtId</li>
-        <li>startDate</li>
-        <li>endDate</li>
-    </ul>
-
     <h2>Siri Shortcut QR Code</h2>
     <div class="qr-code">
         <p>Scan this QR code to get the Siri shortcut:</p>
