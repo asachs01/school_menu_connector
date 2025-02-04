@@ -3,7 +3,7 @@
 
 # School Menu Connector
 
-School Menu Connector is a Go application that fetches school lunch menus from the LINQ Connect API generates an ICS file. Oh, and it can also send them via email (using the CLI client). It's designed to be flexible, allowing configuration through both command-line flags and environment variables.
+School Menu Connector is a Go application that fetches school menus from the LINQ Connect API and generates an ICS file. It can fetch lunch menus and send them via email (using the CLI client). It's designed to be flexible, allowing configuration through both command-line flags and environment variables.
 
 ## Features
 
@@ -12,6 +12,7 @@ School Menu Connector is a Go application that fetches school lunch menus from t
 - Configurable through command-line flags or environment variables
 - Customizable email subject
 - Generate ICS files via web API endpoint
+- Web interface for easy menu downloads
 
 ## Web API
 
@@ -35,6 +36,8 @@ curl -X POST https://localhost:8080/get-menu \
      -F "startDate=MM-DD-YYYY" \
      -F "endDate=MM-DD-YYYY"
 ```
+
+The API will return an ICS file containing lunch menu events for the specified date range.
 
 ## Prerequisites
 
