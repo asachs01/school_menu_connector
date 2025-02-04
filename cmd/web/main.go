@@ -62,10 +62,11 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
 
 // Add this struct for JSON requests
 type MenuRequest struct {
-	BuildingID string `json:"buildingId"`
-	DistrictID string `json:"districtId"`
-	StartDate  string `json:"startDate"`
-	EndDate    string `json:"endDate"`
+	BuildingID   string   `json:"buildingId"`
+	DistrictID   string   `json:"districtId"`
+	StartDate    string   `json:"startDate"`
+	EndDate      string   `json:"endDate"`
+	MealTypes    []string `json:"mealTypes"`
 }
 
 func getMenuHandler(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +85,7 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var buildingID, districtID, startDate, endDate string
+	var mealTypes []string
 	contentType := r.Header.Get("Content-Type")
 
 	// Handle JSON requests
@@ -99,6 +101,7 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 		districtID = req.DistrictID
 		startDate = req.StartDate
 		endDate = req.EndDate
+		mealTypes = req.MealTypes
 	} else {
 		// Handle form data requests
 		if err := r.ParseForm(); err != nil {
@@ -110,6 +113,12 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 		districtID = r.Form.Get("districtId")
 		startDate = r.Form.Get("startDate")
 		endDate = r.Form.Get("endDate")
+		mealTypes = r.Form["mealTypes"]
+	}
+
+	// If no meal types selected, default to Lunch
+	if len(mealTypes) == 0 {
+		mealTypes = []string{"Lunch"}
 	}
 
 	// Validate required fields
@@ -142,7 +151,7 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 	}).Info("Generating ICS file")
 
 	// Generate the ICS file
-	icsContent, err := ics.GenerateICSFile(buildingID, districtID, startDate, endDate, "", false)
+	icsContent, err := ics.GenerateICSFileWithMealTypes(buildingID, districtID, startDate, endDate, mealTypes, false)
 	if err != nil {
 		logger.WithError(err).Error("Error generating ICS file")
 		http.Error(w, fmt.Sprintf("Error generating ICS file: %v", err), http.StatusInternalServerError)
