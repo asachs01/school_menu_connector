@@ -137,3 +137,40 @@ func (m *Menu) GetLunchMenuForDate(date string, debug bool) string {
 	}
 	return ""
 }
+
+// GetMenuForSession returns the menu string for a specific serving session (Breakfast, Lunch, or Snack)
+func (m *Menu) GetMenuForSession(session string, date string, debug bool) string {
+	var menuBuilder strings.Builder
+
+	for _, sess := range m.FamilyMenuSessions {
+		if sess.ServingSession == session {
+			for _, plan := range sess.MenuPlans {
+				for _, day := range plan.Days {
+					if debug {
+						fmt.Printf("Checking day: %s\n", day.Date)
+					}
+
+					if day.Date == date {
+						fmt.Fprintf(&menuBuilder, "%s Menu for %s:\n\n", session, day.Date)
+						for _, meal := range day.MenuMeals {
+							fmt.Fprintf(&menuBuilder, "%s:\n", meal.MenuMealName)
+							for _, category := range meal.RecipeCategories {
+								fmt.Fprintf(&menuBuilder, "  %s:\n", category.CategoryName)
+								for _, recipe := range category.Recipes {
+									fmt.Fprintf(&menuBuilder, "    - %s\n", recipe.RecipeName)
+								}
+							}
+							menuBuilder.WriteString("\n")
+						}
+						return menuBuilder.String()
+					}
+				}
+			}
+		}
+	}
+
+	if debug {
+		fmt.Printf("No %s menu found for date: %s\n", session, date)
+	}
+	return ""
+}
