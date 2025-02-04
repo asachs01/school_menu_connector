@@ -92,6 +92,14 @@
             color: #333;
         }
 
+        .site-header-link:hover .site-title {
+            color: #0d6efd;
+        }
+
+        .site-header-link:hover {
+            text-decoration: none;
+        }
+
         /* Search box styling */
         .search-box {
             margin-bottom: 10px;
@@ -188,8 +196,10 @@
 <body>
     <div class="container">
         <div class="site-header">
-            <img src="/static/logo.svg" alt="School Menu Connector Logo" class="site-logo">
-            <h1 class="site-title">School Menu Connector</h1>
+            <a href="/" class="site-header-link" style="text-decoration: none; display: flex; align-items: center; gap: 15px;">
+                <img src="/static/logo.svg" alt="School Menu Connector Logo" class="site-logo">
+                <h1 class="site-title">School Menu Connector</h1>
+            </a>
         </div>
 
         <p class="lead mb-4">Download your school's menu directly to your calendar.</p>
