@@ -22,6 +22,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/asachs01/school_menu_connector/internal/menu"
@@ -44,15 +45,21 @@ func main() {
 	emailFlag := flag.Bool("email", false, "Send email")
 	icsFlag := flag.Bool("ics", false, "Generate ICS file")
 	debugFlag := flag.Bool("debug", false, "Enable debug mode")
+	mealTypesFlag := flag.String("meal-types", "Lunch", "Comma-separated list of meal types (Breakfast,Lunch,Snack)")
 	flag.Parse()
 
-	if err := run(*buildingID, *districtID, *recipients, *sender, *password, *smtpServer, *subject, *startDate, *endDate, *weekStart, *icsOutputPath, *emailFlag, *icsFlag, *debugFlag); err != nil {
+	mealTypes := strings.Split(*mealTypesFlag, ",")
+	for i, mt := range mealTypes {
+		mealTypes[i] = strings.TrimSpace(mt)
+	}
+
+	if err := run(*buildingID, *districtID, *recipients, *sender, *password, *smtpServer, *subject, *startDate, *endDate, *weekStart, *icsOutputPath, *emailFlag, *icsFlag, *debugFlag, mealTypes); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(buildingID, districtID, recipients, sender, password, smtpServer, subject, startDate, endDate, weekStart, icsOutputPath string, emailFlag, icsFlag, debugFlag bool) error {
+func run(buildingID, districtID, recipients, sender, password, smtpServer, subject, startDate, endDate, weekStart, icsOutputPath string, emailFlag, icsFlag, debugFlag bool, mealTypes []string) error {
 	start, err := time.Parse("01-02-2006", startDate)
 	if err != nil {
 		return fmt.Errorf("invalid start date: %w", err)
@@ -90,8 +97,8 @@ func run(buildingID, districtID, recipients, sender, password, smtpServer, subje
 	}
 
 	if icsFlag {
-		outputPath := fmt.Sprintf("lunch_menu_%s_to_%s.ics", start.Format("01-02-2006"), end.Format("01-02-2006"))
-		_, err := ics.GenerateICSFile(buildingID, districtID, startDate, endDate, outputPath, debugFlag)
+		outputPath := fmt.Sprintf("menu_%s_to_%s.ics", start.Format("01-02-2006"), end.Format("01-02-2006"))
+		_, err := ics.GenerateICSFileWithMealTypes(buildingID, districtID, startDate, endDate, mealTypes, outputPath, debugFlag)
 		if err != nil {
 			return fmt.Errorf("failed to generate ICS file: %v", err)
 		}
