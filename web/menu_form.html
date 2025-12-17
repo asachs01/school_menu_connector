@@ -191,6 +191,76 @@
             cursor: not-allowed;
             opacity: 0.65;
         }
+
+        /* Calendar buttons styling */
+        .calendar-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .calendar-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-google {
+            background-color: #4285f4;
+            border-color: #4285f4;
+            color: white;
+        }
+
+        .btn-google:hover {
+            background-color: #3367d6;
+            border-color: #3367d6;
+            color: white;
+        }
+
+        .btn-apple {
+            background-color: #333;
+            border-color: #333;
+            color: white;
+        }
+
+        .btn-apple:hover {
+            background-color: #000;
+            border-color: #000;
+            color: white;
+        }
+
+        .btn-ics {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: white;
+        }
+
+        .btn-ics:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            color: white;
+        }
+
+        .calendar-btn .spinner-border {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        @media (min-width: 576px) {
+            .calendar-buttons {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .calendar-btn {
+                flex: 1;
+                min-width: 140px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -271,10 +341,23 @@
                         <input type="date" name="endDate" class="form-control" required>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" id="submitButton">
-                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="submitSpinner"></span>
-                        <span id="submitText">Download Menu Calendar</span>
-                    </button>
+                    <div class="calendar-buttons">
+                        <button type="button" class="btn calendar-btn btn-google" id="googleCalBtn" onclick="addToCalendar('google')">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-google"></i>
+                            <span class="btn-text">Add to Google Calendar</span>
+                        </button>
+                        <button type="button" class="btn calendar-btn btn-apple" id="appleCalBtn" onclick="addToCalendar('apple')">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-apple"></i>
+                            <span class="btn-text">Add to Apple Calendar</span>
+                        </button>
+                        <button type="button" class="btn calendar-btn btn-ics" id="icsDownloadBtn" onclick="addToCalendar('ics')">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-download"></i>
+                            <span class="btn-text">Download ICS File</span>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -387,24 +470,136 @@
             });
         }
 
-        // Add form submission handling
-        document.getElementById('menuForm').addEventListener('submit', function(e) {
-            const submitButton = document.getElementById('submitButton');
-            const submitSpinner = document.getElementById('submitSpinner');
-            const submitText = document.getElementById('submitText');
-
-            // Disable button and show spinner
-            submitButton.disabled = true;
-            submitSpinner.classList.remove('d-none');
-            submitText.textContent = 'Generating Calendar...';
-
-            // Re-enable after 10 seconds in case of errors
+        function showToast(message) {
+            const toast = document.getElementById('copyToast');
+            toast.textContent = message;
+            toast.style.display = 'block';
             setTimeout(() => {
-                submitButton.disabled = false;
-                submitSpinner.classList.add('d-none');
-                submitText.textContent = 'Download Menu Calendar';
-            }, 10000);
-        });
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        function setButtonLoading(button, loading) {
+            const spinner = button.querySelector('.spinner-border');
+            const btnText = button.querySelector('.btn-text');
+            const originalText = btnText.dataset.originalText || btnText.textContent;
+
+            if (loading) {
+                btnText.dataset.originalText = originalText;
+                button.disabled = true;
+                spinner.classList.remove('d-none');
+                btnText.textContent = 'Generating...';
+            } else {
+                button.disabled = false;
+                spinner.classList.add('d-none');
+                btnText.textContent = originalText;
+            }
+        }
+
+        function validateForm() {
+            const form = document.getElementById('menuForm');
+            const buildingId = document.getElementById('schoolSelect').value;
+            const districtId = document.getElementById('districtSelect').value;
+            const startDate = form.querySelector('input[name="startDate"]').value;
+            const endDate = form.querySelector('input[name="endDate"]').value;
+            const mealTypes = Array.from(form.querySelectorAll('input[name="mealTypes"]:checked')).map(cb => cb.value);
+
+            if (!buildingId || !districtId || !startDate || !endDate) {
+                showToast('Please fill in all required fields');
+                return null;
+            }
+
+            if (mealTypes.length === 0) {
+                mealTypes.push('Lunch');
+            }
+
+            return { buildingId, districtId, startDate, endDate, mealTypes };
+        }
+
+        async function fetchICSData(formData) {
+            const params = new URLSearchParams();
+            params.append('buildingId', formData.buildingId);
+            params.append('districtId', formData.districtId);
+            params.append('startDate', formData.startDate);
+            params.append('endDate', formData.endDate);
+            formData.mealTypes.forEach(type => params.append('mealTypes', type));
+
+            const response = await fetch('/get-menu', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: params.toString()
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate calendar');
+            }
+
+            return await response.blob();
+        }
+
+        async function addToCalendar(type) {
+            const formData = validateForm();
+            if (!formData) return;
+
+            const buttonId = type === 'google' ? 'googleCalBtn' :
+                            type === 'apple' ? 'appleCalBtn' : 'icsDownloadBtn';
+            const button = document.getElementById(buttonId);
+
+            setButtonLoading(button, true);
+
+            try {
+                const icsBlob = await fetchICSData(formData);
+
+                if (type === 'ics') {
+                    // Standard ICS download
+                    downloadICS(icsBlob);
+                } else if (type === 'google') {
+                    // For Google Calendar: download file and open import page
+                    downloadICS(icsBlob, 'school_menu_google.ics');
+                    showToast('ICS downloaded! Opening Google Calendar import...');
+                    setTimeout(() => {
+                        window.open('https://calendar.google.com/calendar/u/0/r/settings/export', '_blank');
+                    }, 500);
+                } else if (type === 'apple') {
+                    // For Apple Calendar: use data URL to trigger native handler
+                    const dataUrl = await blobToDataUrl(icsBlob);
+                    // Replace data: prefix to use webcal-like behavior
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = 'school_menu.ics';
+                    // On Apple devices, clicking an ICS file will open Calendar app
+                    link.click();
+                    showToast('Opening in Calendar app...');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Error generating calendar. Please try again.');
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        function downloadICS(blob, filename = 'school_menu.ics') {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function blobToDataUrl(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
     </script>
 </body>
 </html> 
