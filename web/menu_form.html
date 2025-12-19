@@ -547,6 +547,13 @@
                             type === 'apple' ? 'appleCalBtn' : 'icsDownloadBtn';
             const button = document.getElementById(buttonId);
 
+            // For Google Calendar, open the window immediately to preserve user gesture context
+            // This prevents popup blockers from blocking the window
+            let googleWindow = null;
+            if (type === 'google') {
+                googleWindow = window.open('https://calendar.google.com/calendar/r/settings/export', '_blank');
+            }
+
             setButtonLoading(button, true);
 
             try {
@@ -556,12 +563,9 @@
                     // Standard ICS download
                     downloadICS(icsBlob);
                 } else if (type === 'google') {
-                    // For Google Calendar: download file and open import page
+                    // For Google Calendar: download file (import page already opened)
                     downloadICS(icsBlob, 'school_menu_google.ics');
-                    showToast('ICS downloaded! Opening Google Calendar import...');
-                    setTimeout(() => {
-                        window.open('https://calendar.google.com/calendar/u/0/r/settings/export', '_blank');
-                    }, 500);
+                    showToast('ICS downloaded! Import it in the opened Google Calendar tab.');
                 } else if (type === 'apple') {
                     // For Apple Calendar: use data URL to trigger native handler
                     const dataUrl = await blobToDataUrl(icsBlob);
@@ -576,6 +580,10 @@
             } catch (error) {
                 console.error('Error:', error);
                 showToast('Error generating calendar. Please try again.');
+                // Close the Google Calendar window if there was an error
+                if (googleWindow && !googleWindow.closed) {
+                    googleWindow.close();
+                }
             } finally {
                 setButtonLoading(button, false);
             }
