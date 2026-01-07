@@ -261,6 +261,69 @@
                 min-width: 140px;
             }
         }
+
+        /* Modal styling */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1050;
+            overflow-y: auto;
+        }
+
+        .modal-dialog {
+            max-width: 500px;
+            margin: 1.75rem auto;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-body {
+            padding: 1rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1rem;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.5;
+        }
+
+        .btn-close:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -550,28 +613,42 @@
             setButtonLoading(button, true);
 
             try {
-                const icsBlob = await fetchICSData(formData);
+                if (type === 'google') {
+                    // For Google Calendar: use URL API for direct event creation
+                    const data = await fetchMenuJSON(formData);
 
-                if (type === 'ics') {
-                    // Standard ICS download
-                    downloadICS(icsBlob);
-                } else if (type === 'google') {
-                    // For Google Calendar: download file and open import page
-                    downloadICS(icsBlob, 'school_menu_google.ics');
-                    showToast('ICS downloaded! Opening Google Calendar import...');
-                    setTimeout(() => {
-                        window.open('https://calendar.google.com/calendar/u/0/r/settings/export', '_blank');
-                    }, 500);
-                } else if (type === 'apple') {
-                    // For Apple Calendar: use data URL to trigger native handler
-                    const dataUrl = await blobToDataUrl(icsBlob);
-                    // Replace data: prefix to use webcal-like behavior
-                    const link = document.createElement('a');
-                    link.href = dataUrl;
-                    link.download = 'school_menu.ics';
-                    // On Apple devices, clicking an ICS file will open Calendar app
-                    link.click();
-                    showToast('Opening in Calendar app...');
+                    if (!data.events || data.events.length === 0) {
+                        showToast('No menu events found for selected dates');
+                        return;
+                    }
+
+                    if (data.events.length === 1) {
+                        // Single event: open directly in Google Calendar
+                        const url = generateGoogleCalendarUrl(data.events[0]);
+                        window.open(url, '_blank');
+                        showToast('Opening Google Calendar...');
+                    } else {
+                        // Multiple events: show modal with individual links
+                        showGoogleCalendarModal(data.events);
+                    }
+                } else {
+                    // For Apple Calendar and ICS download: use existing ICS approach
+                    const icsBlob = await fetchICSData(formData);
+
+                    if (type === 'ics') {
+                        // Standard ICS download
+                        downloadICS(icsBlob);
+                        showToast('Calendar file downloaded!');
+                    } else if (type === 'apple') {
+                        // For Apple Calendar: use data URL to trigger native handler
+                        const dataUrl = await blobToDataUrl(icsBlob);
+                        const link = document.createElement('a');
+                        link.href = dataUrl;
+                        link.download = 'school_menu.ics';
+                        // On Apple devices, clicking an ICS file will open Calendar app
+                        link.click();
+                        showToast('Opening in Calendar app...');
+                    }
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -599,6 +676,118 @@
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
             });
+        }
+
+        // Fetch menu events as JSON for Google Calendar URL generation
+        async function fetchMenuJSON(formData) {
+            const response = await fetch('/get-menu-json', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch menu data');
+            }
+
+            return await response.json();
+        }
+
+        // Generate Google Calendar URL for a single event
+        function generateGoogleCalendarUrl(event) {
+            const baseUrl = 'https://calendar.google.com/calendar/render';
+
+            // Parse date and create all-day event format (YYYYMMDD/YYYYMMDD+1)
+            const startDate = event.date.replace(/-/g, '');
+            const endDateObj = new Date(event.date);
+            endDateObj.setDate(endDateObj.getDate() + 1);
+            const endDate = endDateObj.toISOString().slice(0, 10).replace(/-/g, '');
+
+            const params = new URLSearchParams({
+                action: 'TEMPLATE',
+                text: event.title,
+                dates: `${startDate}/${endDate}`,
+                details: event.description
+            });
+
+            return `${baseUrl}?${params.toString()}`;
+        }
+
+        // Show Google Calendar events modal
+        function showGoogleCalendarModal(events) {
+            // Remove existing modal if any
+            const existingModal = document.getElementById('gcalModal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'gcalModal';
+            modal.className = 'modal fade show';
+            modal.style.cssText = 'display: block; background: rgba(0,0,0,0.5);';
+
+            const eventsList = events.map(event => {
+                const url = generateGoogleCalendarUrl(event);
+                return `
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                        <span>${event.title}</span>
+                        <a href="${url}" target="_blank" class="btn btn-sm btn-google">
+                            <i class="bi bi-plus-circle"></i> Add
+                        </a>
+                    </div>
+                `;
+            }).join('');
+
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="bi bi-google"></i> Add to Google Calendar
+                            </h5>
+                            <button type="button" class="btn-close" onclick="closeGcalModal()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted mb-3">Click "Add" to open each event in Google Calendar:</p>
+                            ${eventsList}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeGcalModal()">Close</button>
+                            <button type="button" class="btn btn-google" onclick="openAllGoogleCalendar()">
+                                <i class="bi bi-box-arrow-up-right"></i> Open All (${events.length})
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Store events for "Open All" functionality
+            modal.dataset.events = JSON.stringify(events);
+            document.body.appendChild(modal);
+        }
+
+        function closeGcalModal() {
+            const modal = document.getElementById('gcalModal');
+            if (modal) modal.remove();
+        }
+
+        function openAllGoogleCalendar() {
+            const modal = document.getElementById('gcalModal');
+            const events = JSON.parse(modal.dataset.events);
+
+            // Open first event immediately
+            if (events.length > 0) {
+                window.open(generateGoogleCalendarUrl(events[0]), '_blank');
+            }
+
+            // Open remaining with slight delays to avoid popup blockers
+            events.slice(1).forEach((event, index) => {
+                setTimeout(() => {
+                    window.open(generateGoogleCalendarUrl(event), '_blank');
+                }, (index + 1) * 300);
+            });
+
+            showToast(`Opening ${events.length} calendar events...`);
         }
     </script>
 </body>

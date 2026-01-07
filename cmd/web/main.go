@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/asachs01/school_menu_connector/internal/ics"
+	"github.com/asachs01/school_menu_connector/internal/menu"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,6 +30,7 @@ func main() {
 
 	// Set up the HTTP server with explicit routes
 	mux.HandleFunc("/get-menu", logMiddleware(getMenuHandler))
+	mux.HandleFunc("/get-menu-json", logMiddleware(getMenuJSONHandler))
 	mux.HandleFunc("/menu", logMiddleware(serveMenuForm))
 	mux.HandleFunc("/", logMiddleware(serveIndex))
 
@@ -67,6 +69,19 @@ type MenuRequest struct {
 	StartDate    string   `json:"startDate"`
 	EndDate      string   `json:"endDate"`
 	MealTypes    []string `json:"mealTypes"`
+}
+
+// MenuEvent represents a single calendar event for JSON response
+type MenuEvent struct {
+	Date        string `json:"date"`        // YYYY-MM-DD format
+	MealType    string `json:"mealType"`    // Breakfast, Lunch, Snack
+	Title       string `json:"title"`       // Event title
+	Description string `json:"description"` // Full menu text
+}
+
+// MenuEventsResponse is the JSON response for /get-menu-json
+type MenuEventsResponse struct {
+	Events []MenuEvent `json:"events"`
 }
 
 func getMenuHandler(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +185,96 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		logger.Info("ICS file sent successfully")
 	}
+}
+
+// getMenuJSONHandler returns menu events as JSON for Google Calendar URL API
+func getMenuJSONHandler(w http.ResponseWriter, r *http.Request) {
+	logger.WithFields(logrus.Fields{
+		"method": r.Method,
+		"path":   r.URL.Path,
+	}).Info("Received request to /get-menu-json")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST requests are supported", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var buildingID, districtID, startDate, endDate string
+	var mealTypes []string
+	contentType := r.Header.Get("Content-Type")
+
+	if contentType == "application/json" {
+		var req MenuRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Error parsing JSON request", http.StatusBadRequest)
+			return
+		}
+		buildingID = req.BuildingID
+		districtID = req.DistrictID
+		startDate = req.StartDate
+		endDate = req.EndDate
+		mealTypes = req.MealTypes
+	} else {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Error parsing form data", http.StatusBadRequest)
+			return
+		}
+		buildingID = r.Form.Get("buildingId")
+		districtID = r.Form.Get("districtId")
+		startDate = r.Form.Get("startDate")
+		endDate = r.Form.Get("endDate")
+		mealTypes = r.Form["mealTypes"]
+	}
+
+	if len(mealTypes) == 0 {
+		mealTypes = []string{"Lunch"}
+	}
+
+	if buildingID == "" || districtID == "" || startDate == "" || endDate == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Convert dates to internal format (mm-dd-yyyy)
+	startDateInternal, err := validateAndConvertDate(startDate)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid start date: %v", err), http.StatusBadRequest)
+		return
+	}
+	endDateInternal, err := validateAndConvertDate(endDate)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid end date: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parse dates for iteration
+	start, _ := time.Parse("01-02-2006", startDateInternal)
+	end, _ := time.Parse("01-02-2006", endDateInternal)
+
+	var events []MenuEvent
+
+	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
+		dateStr := date.Format("01-02-2006")
+		menuData, err := menu.Fetch(buildingID, districtID, dateStr, dateStr, false)
+		if err != nil {
+			continue
+		}
+
+		for _, mealType := range mealTypes {
+			mealMenu := menuData.GetMenuForSession(mealType, date.Format("1/2/2006"), false)
+			if mealMenu != "" {
+				events = append(events, MenuEvent{
+					Date:        date.Format("2006-01-02"),
+					MealType:    mealType,
+					Title:       fmt.Sprintf("%s Menu - %s", mealType, date.Format("01/02/2006")),
+					Description: mealMenu,
+				})
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(MenuEventsResponse{Events: events})
 }
 
 func validateAndConvertDate(date string) (string, error) {
