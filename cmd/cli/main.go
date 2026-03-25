@@ -98,9 +98,12 @@ func run(buildingID, districtID, recipients, sender, password, smtpServer, subje
 
 	if icsFlag {
 		outputPath := fmt.Sprintf("menu_%s_to_%s.ics", start.Format("01-02-2006"), end.Format("01-02-2006"))
-		_, err := ics.GenerateICSFileWithMealTypes(buildingID, districtID, startDate, endDate, mealTypes, outputPath, debugFlag)
+		icsData, err := ics.GenerateICSFileWithMealTypes(buildingID, districtID, startDate, endDate, mealTypes, debugFlag)
 		if err != nil {
 			return fmt.Errorf("failed to generate ICS file: %v", err)
+		}
+		if err := os.WriteFile(outputPath, icsData, 0644); err != nil {
+			return fmt.Errorf("failed to write ICS file: %v", err)
 		}
 		fmt.Printf("ICS file generated successfully: %s\n", outputPath)
 	}
