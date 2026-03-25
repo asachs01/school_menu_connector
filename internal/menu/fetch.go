@@ -39,7 +39,17 @@ func Fetch(buildingID, districtID, startDate, endDate string, debug bool) (*Menu
 		fmt.Printf("API URL: %s\n", url)
 	}
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating HTTP request: %w", err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; SchoolMenuConnector/1.0)")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Origin", "https://linqconnect.com")
+	req.Header.Set("Referer", "https://linqconnect.com/")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP GET request failed: %w", err)
 	}
