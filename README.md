@@ -196,6 +196,52 @@ When deploying to DigitalOcean App Platform:
 1. Ensure that the "Preserve Path Prefix" option is checked for your routes in the App Platform configuration.
 2. This setting allows the full request path to be passed to your application, which is crucial for proper routing.
 
+### Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `PORT` | No | HTTP server port (default: `8080`) |
+| `LINQ_PROXY_URL` | No | Base URL of the Cloudflare Worker proxy (e.g., `https://linq-menu-proxy.<subdomain>.workers.dev`). When set, all LINQ API requests are routed through the proxy to avoid Cloudflare bot protection on datacenter IPs. |
+| `REFRESH_API_KEY` | No | API key to protect the `/refresh-cache` endpoint. If set, requests must include an `X-API-Key` header with this value. |
+
+### Cloudflare Worker Proxy
+
+The LINQ Connect API (`api.linqconnect.com`) uses Cloudflare bot protection that blocks requests from datacenter IPs (e.g., DigitalOcean, AWS). A Cloudflare Worker proxy is provided in `worker/` to solve this: since the Worker runs on Cloudflare's own network, requests are not blocked.
+
+**Deploy the worker:**
+
+```bash
+cd worker
+npm install
+npx wrangler deploy
+```
+
+This gives you a URL like `https://linq-menu-proxy.<subdomain>.workers.dev`. Set `LINQ_PROXY_URL` to this URL in your DigitalOcean app config.
+
+The worker:
+- Only proxies `GET /api/FamilyMenu` requests (validates required query params)
+- Adds browser-like headers to upstream requests
+- Caches responses for 6 hours using Cloudflare's Cache API
+- Rate limits by client IP (30 requests/minute)
+- Returns CORS headers for `schoolmenuconnector.com`
+
+### Cache Refresh
+
+The app caches menu responses on the filesystem (`/tmp/menu-cache/`) with a 6-hour TTL. To pre-warm the cache (useful as a cron job):
+
+```bash
+curl -X POST https://your-app-url/refresh-cache \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_REFRESH_API_KEY" \
+  -d '{
+    "schools": [
+      {"buildingId": "YOUR_BUILDING_ID", "districtId": "YOUR_DISTRICT_ID"}
+    ],
+    "startDate": "2025-01-06",
+    "endDate": "2025-01-10"
+  }'
+```
+
 ## License
 
 [GPLv3](LICENSE)

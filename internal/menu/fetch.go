@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -32,7 +33,9 @@ type Menu struct {
 	AcademicCalendars []interface{} `json:"AcademicCalendars"`
 }
 
-// Fetch retrieves the menu from the API for the given building, district, and date range
+// Fetch retrieves the menu from the API for the given building, district, and date range.
+// If the LINQ_PROXY_URL environment variable is set, requests are routed through
+// the Cloudflare Worker proxy instead of hitting api.linqconnect.com directly.
 func Fetch(buildingID, districtID, startDate, endDate string, debug bool) (*Menu, error) {
 	url := constructURL(buildingID, districtID, startDate, endDate)
 	if debug {
@@ -60,6 +63,10 @@ func Fetch(buildingID, districtID, startDate, endDate string, debug bool) (*Menu
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
 	if debug {
 		fmt.Printf("Response body: %s\n", string(body))
 	}
@@ -76,9 +83,16 @@ func Fetch(buildingID, districtID, startDate, endDate string, debug bool) (*Menu
 	return &menu, nil
 }
 
-// constructURL builds the API URL with the given parameters
+// constructURL builds the API URL with the given parameters.
+// Uses the Cloudflare Worker proxy if LINQ_PROXY_URL is set.
 func constructURL(buildingID, districtID, startDate, endDate string) string {
-	return fmt.Sprintf("%s?buildingId=%s&districtId=%s&startDate=%s&endDate=%s", apiURL, buildingID, districtID, startDate, endDate)
+	baseURL := apiURL
+	if proxyURL := os.Getenv("LINQ_PROXY_URL"); proxyURL != "" {
+		// The proxy mirrors the same path structure, so swap the base.
+		baseURL = strings.TrimRight(proxyURL, "/") + "/api/FamilyMenu"
+	}
+	return fmt.Sprintf("%s?buildingId=%s&districtId=%s&startDate=%s&endDate=%s",
+		baseURL, buildingID, districtID, startDate, endDate)
 }
 
 func (m *Menu) GetLunchMenuString() string {

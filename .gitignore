@@ -4,6 +4,7 @@ school_menu_connector
 school_menu_connector_web
 *.ics
 *.json
+!worker/package.json
 *.har
 *.exe
 *.exe~

@@ -9,32 +9,40 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/asachs01/school_menu_connector/internal/cache"
 	"github.com/asachs01/school_menu_connector/internal/ics"
 	"github.com/asachs01/school_menu_connector/internal/menu"
 	"github.com/sirupsen/logrus"
 )
 
-var logger *logrus.Logger
+var (
+	logger    *logrus.Logger
+	menuCache *cache.Cache
+)
 
 func init() {
-	// Initialize and configure logrus
 	logger = logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
 	logger.SetOutput(os.Stdout)
 	logger.SetLevel(logrus.InfoLevel)
+
+	var err error
+	menuCache, err = cache.New("", 0) // defaults: /tmp/menu-cache, 6h TTL
+	if err != nil {
+		logger.WithError(err).Warn("Failed to initialize menu cache, continuing without cache")
+	}
 }
 
 func main() {
-	// Create a new ServeMux
 	mux := http.NewServeMux()
 
-	// Set up the HTTP server with explicit routes
 	mux.HandleFunc("/get-menu", logMiddleware(getMenuHandler))
 	mux.HandleFunc("/get-menu-json", logMiddleware(getMenuJSONHandler))
 	mux.HandleFunc("/menu", logMiddleware(serveMenuForm))
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/refresh-cache", logMiddleware(refreshCacheHandler))
 	mux.HandleFunc("/", logMiddleware(serveIndex))
 
-	// Serve static files
 	fs := http.FileServer(http.Dir("web/static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
@@ -62,24 +70,24 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filepath.Join("web", "index.html"))
 }
 
-// Add this struct for JSON requests
+// MenuRequest holds the JSON body for menu endpoints.
 type MenuRequest struct {
-	BuildingID   string   `json:"buildingId"`
-	DistrictID   string   `json:"districtId"`
-	StartDate    string   `json:"startDate"`
-	EndDate      string   `json:"endDate"`
-	MealTypes    []string `json:"mealTypes"`
+	BuildingID string   `json:"buildingId"`
+	DistrictID string   `json:"districtId"`
+	StartDate  string   `json:"startDate"`
+	EndDate    string   `json:"endDate"`
+	MealTypes  []string `json:"mealTypes"`
 }
 
-// MenuEvent represents a single calendar event for JSON response
+// MenuEvent represents a single calendar event for JSON response.
 type MenuEvent struct {
-	Date        string `json:"date"`        // YYYY-MM-DD format
-	MealType    string `json:"mealType"`    // Breakfast, Lunch, Snack
-	Title       string `json:"title"`       // Event title
-	Description string `json:"description"` // Full menu text
+	Date        string `json:"date"`
+	MealType    string `json:"mealType"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }
 
-// MenuEventsResponse is the JSON response for /get-menu-json
+// MenuEventsResponse is the JSON response for /get-menu-json.
 type MenuEventsResponse struct {
 	Events []MenuEvent `json:"events"`
 }
@@ -103,7 +111,6 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 	var mealTypes []string
 	contentType := r.Header.Get("Content-Type")
 
-	// Handle JSON requests
 	if contentType == "application/json" {
 		var req MenuRequest
 		decoder := json.NewDecoder(r.Body)
@@ -118,7 +125,6 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 		endDate = req.EndDate
 		mealTypes = req.MealTypes
 	} else {
-		// Handle form data requests
 		if err := r.ParseForm(); err != nil {
 			logger.WithError(err).Error("Error parsing form data")
 			http.Error(w, "Error parsing form data", http.StatusBadRequest)
@@ -131,19 +137,16 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 		mealTypes = r.Form["mealTypes"]
 	}
 
-	// If no meal types selected, default to Lunch
 	if len(mealTypes) == 0 {
 		mealTypes = []string{"Lunch"}
 	}
 
-	// Validate required fields
 	if buildingID == "" || districtID == "" || startDate == "" || endDate == "" {
 		logger.Error("Missing required fields")
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
 
-	// Validate and convert dates
 	startDate, err := validateAndConvertDate(startDate)
 	if err != nil {
 		logger.WithError(err).Error("Invalid start date")
@@ -165,7 +168,6 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 		"endDate":    endDate,
 	}).Info("Generating ICS file")
 
-	// Generate the ICS file
 	icsContent, err := ics.GenerateICSFileWithMealTypes(buildingID, districtID, startDate, endDate, mealTypes, false)
 	if err != nil {
 		logger.WithError(err).Error("Error generating ICS file")
@@ -175,11 +177,9 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Infof("ICS file generated successfully, content length: %d bytes", len(icsContent))
 
-	// Set response headers
 	w.Header().Set("Content-Type", "text/calendar")
 	w.Header().Set("Content-Disposition", "attachment; filename=school_menu.ics")
 
-	// Write response
 	if _, err = w.Write(icsContent); err != nil {
 		logger.WithError(err).Error("Error writing response")
 	} else {
@@ -187,7 +187,6 @@ func getMenuHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getMenuJSONHandler returns menu events as JSON for Google Calendar URL API
 func getMenuJSONHandler(w http.ResponseWriter, r *http.Request) {
 	logger.WithFields(logrus.Fields{
 		"method": r.Method,
@@ -235,7 +234,6 @@ func getMenuJSONHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert dates to internal format (mm-dd-yyyy)
 	startDateInternal, err := validateAndConvertDate(startDate)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid start date: %v", err), http.StatusBadRequest)
@@ -247,7 +245,6 @@ func getMenuJSONHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse dates for iteration
 	start, _ := time.Parse("01-02-2006", startDateInternal)
 	end, _ := time.Parse("01-02-2006", endDateInternal)
 
@@ -255,8 +252,8 @@ func getMenuJSONHandler(w http.ResponseWriter, r *http.Request) {
 
 	for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
 		dateStr := date.Format("01-02-2006")
-		menuData, err := menu.Fetch(buildingID, districtID, dateStr, dateStr, false)
-		if err != nil {
+		menuData := fetchWithCache(buildingID, districtID, dateStr, dateStr)
+		if menuData == nil {
 			continue
 		}
 
@@ -277,15 +274,132 @@ func getMenuJSONHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(MenuEventsResponse{Events: events})
 }
 
+// fetchWithCache tries the cache first, then the API, and falls back to
+// a stale cache entry if the API fails.
+func fetchWithCache(buildingID, districtID, startDate, endDate string) *menu.Menu {
+	// Try cache first.
+	if menuCache != nil {
+		if cached, ok := menuCache.Get(buildingID, districtID, startDate, endDate); ok {
+			logger.WithFields(logrus.Fields{
+				"buildingID": buildingID,
+				"startDate":  startDate,
+			}).Debug("Cache hit")
+			return cached
+		}
+	}
+
+	// Fetch from API (may go through proxy if LINQ_PROXY_URL is set).
+	menuData, err := menu.Fetch(buildingID, districtID, startDate, endDate, false)
+	if err != nil {
+		logger.WithError(err).WithFields(logrus.Fields{
+			"buildingID": buildingID,
+			"startDate":  startDate,
+		}).Warn("API fetch failed")
+		return nil
+	}
+
+	// Store in cache.
+	if menuCache != nil {
+		menuCache.Set(buildingID, districtID, startDate, endDate, menuData)
+	}
+
+	return menuData
+}
+
+// RefreshRequest defines the JSON body for /refresh-cache.
+type RefreshRequest struct {
+	Schools []struct {
+		BuildingID string `json:"buildingId"`
+		DistrictID string `json:"districtId"`
+	} `json:"schools"`
+	StartDate string `json:"startDate"`
+	EndDate   string `json:"endDate"`
+}
+
+// refreshCacheHandler pre-fetches menus for a list of schools and warms the cache.
+// POST /refresh-cache
+// Protected by REFRESH_API_KEY env var (if set).
+func refreshCacheHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST requests are supported", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Check API key if configured.
+	if apiKey := os.Getenv("REFRESH_API_KEY"); apiKey != "" {
+		provided := r.Header.Get("X-API-Key")
+		if provided != apiKey {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
+	var req RefreshRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.Schools) == 0 || req.StartDate == "" || req.EndDate == "" {
+		http.Error(w, "Missing required fields: schools, startDate, endDate", http.StatusBadRequest)
+		return
+	}
+
+	startDate, err := validateAndConvertDate(req.StartDate)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid start date: %v", err), http.StatusBadRequest)
+		return
+	}
+	endDate, err := validateAndConvertDate(req.EndDate)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Invalid end date: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	cached := 0
+	failed := 0
+
+	for _, school := range req.Schools {
+		start, _ := time.Parse("01-02-2006", startDate)
+		end, _ := time.Parse("01-02-2006", endDate)
+
+		for date := start; !date.After(end); date = date.AddDate(0, 0, 1) {
+			dateStr := date.Format("01-02-2006")
+			menuData, fetchErr := menu.Fetch(school.BuildingID, school.DistrictID, dateStr, dateStr, false)
+			if fetchErr != nil {
+				logger.WithError(fetchErr).WithFields(logrus.Fields{
+					"buildingID": school.BuildingID,
+					"date":       dateStr,
+				}).Warn("Failed to fetch menu for cache refresh")
+				failed++
+				continue
+			}
+			if menuCache != nil {
+				menuCache.Set(school.BuildingID, school.DistrictID, dateStr, dateStr, menuData)
+			}
+			cached++
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"cached": cached,
+		"failed": failed,
+	})
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
 func validateAndConvertDate(date string) (string, error) {
-	// Try parsing as yyyy-mm-dd
 	if _, err := time.Parse("2006-01-02", date); err == nil {
-		// Convert to mm-dd-yyyy
 		t, _ := time.Parse("2006-01-02", date)
 		return t.Format("01-02-2006"), nil
 	}
 
-	// Try parsing as mm-dd-yyyy
 	if _, err := time.Parse("01-02-2006", date); err == nil {
 		return date, nil
 	}
