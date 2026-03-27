@@ -36,9 +36,15 @@ function corsHeaders(origin, allowedOrigin) {
   return {
     "Access-Control-Allow-Origin": allowed ? origin : allowedOrigin,
     "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token",
     "Access-Control-Max-Age": "86400",
   };
+}
+
+// Check if the request is authenticated via auth token (server-to-server).
+function isAuthenticated(request, env) {
+  const token = request.headers.get("X-Auth-Token");
+  return token && env.AUTH_TOKEN && token === env.AUTH_TOKEN;
 }
 
 export default {
@@ -49,6 +55,7 @@ export default {
     const url = new URL(request.url);
     const allowedOrigin = env.ALLOWED_ORIGIN || "https://schoolmenuconnector.com";
     const origin = request.headers.get("Origin") || "";
+    const authed = isAuthenticated(request, env);
 
     // Handle CORS preflight.
     if (request.method === "OPTIONS") {
@@ -87,17 +94,29 @@ export default {
       );
     }
 
-    // Rate limiting by client IP.
-    const clientIP =
-      request.headers.get("CF-Connecting-IP") || "unknown";
-    if (isRateLimited(clientIP)) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-        status: 429,
-        headers: {
-          "Content-Type": "application/json",
-          "Retry-After": "60",
-        },
-      });
+    // For non-authenticated requests, enforce CORS origin and rate limiting.
+    if (!authed) {
+      const allowed =
+        origin === allowedOrigin || origin === "http://localhost:8080";
+      if (!allowed) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // Rate limiting by client IP.
+      const clientIP =
+        request.headers.get("CF-Connecting-IP") || "unknown";
+      if (isRateLimited(clientIP)) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": "60",
+          },
+        });
+      }
     }
 
     // Build upstream URL.

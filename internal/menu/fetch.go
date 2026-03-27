@@ -34,10 +34,11 @@ type Menu struct {
 }
 
 // Fetch retrieves the menu from the API for the given building, district, and date range.
-// If the LINQ_PROXY_URL environment variable is set, requests are routed through
-// the Cloudflare Worker proxy instead of hitting api.linqconnect.com directly.
+// If PROXY_URL and PROXY_AUTH_TOKEN env vars are set, requests are routed through
+// the Cloudflare Worker proxy to avoid IP-based blocking.
 func Fetch(buildingID, districtID, startDate, endDate string, debug bool) (*Menu, error) {
 	url := constructURL(buildingID, districtID, startDate, endDate)
+
 	if debug {
 		fmt.Printf("API URL: %s\n", url)
 	}
@@ -50,6 +51,11 @@ func Fetch(buildingID, districtID, startDate, endDate string, debug bool) (*Menu
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Origin", "https://linqconnect.com")
 	req.Header.Set("Referer", "https://linqconnect.com/")
+
+	// Add proxy auth token if configured
+	if authToken := os.Getenv("PROXY_AUTH_TOKEN"); authToken != "" {
+		req.Header.Set("X-Auth-Token", authToken)
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -84,11 +90,10 @@ func Fetch(buildingID, districtID, startDate, endDate string, debug bool) (*Menu
 }
 
 // constructURL builds the API URL with the given parameters.
-// Uses the Cloudflare Worker proxy if LINQ_PROXY_URL is set.
+// Uses the Cloudflare Worker proxy if PROXY_URL is set.
 func constructURL(buildingID, districtID, startDate, endDate string) string {
 	baseURL := apiURL
-	if proxyURL := os.Getenv("LINQ_PROXY_URL"); proxyURL != "" {
-		// The proxy mirrors the same path structure, so swap the base.
+	if proxyURL := os.Getenv("PROXY_URL"); proxyURL != "" {
 		baseURL = strings.TrimRight(proxyURL, "/") + "/api/FamilyMenu"
 	}
 	return fmt.Sprintf("%s?buildingId=%s&districtId=%s&startDate=%s&endDate=%s",
